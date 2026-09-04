@@ -7,7 +7,9 @@ import type {
   Timeframe
 } from "./types";
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8787";
+// 끝에 슬래시가 붙어 있어도(예: 배포 환경변수에 흔히 실수로 들어가는 형태) 안전하게 처리한다 —
+// 안 그러면 "//api/..." 형태가 되어 Express가 매칭하지 못하고 404가 난다.
+const BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8787").replace(/\/+$/, "");
 
 async function getJson<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`);
