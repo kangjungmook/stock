@@ -56,6 +56,13 @@ function parseWon(value: string): number {
   return Number(value.replace(/[^0-9.-]/g, "")) || 0;
 }
 
+/**
+ * 시세(토스)를 먼저 기다린 다음(컨센서스의 "여력 %" 계산에 실제 현재가가 필요하므로),
+ * 나머지 세 개(공시·컨센서스·수급·뉴스)는 서로 의존하지 않으므로 동시에 실행한다.
+ * 예전에는 이 네 개를 하나씩 순서대로 기다렸는데, 그러면 총 대기 시간이 각 타임아웃의
+ * 합(30초+)까지 늘어나서 /api/briefings 요청 전체가 멈춘 것처럼 보였다 — 병렬로 돌리면
+ * 가장 느린 하나만큼만 기다리면 된다.
+ */
 async function enrichWithLiveData(ticker: string, base: BriefingSnapshot): Promise<BriefingSnapshot> {
   const snapshot: BriefingSnapshot = { ...base };
 
@@ -75,42 +82,44 @@ async function enrichWithLiveData(ticker: string, base: BriefingSnapshot): Promi
     }
   }
 
-  if (liveProvidersConfigured.dart) {
-    try {
-      const filings = await withCache(`dart:${ticker}`, TTL.filings, () => fetchDartFilings(ticker));
-      if (filings.length) snapshot.filings = filings;
-    } catch (error) {
-      console.warn(`[dart] ${ticker} 공시 조회 실패, mock 값 유지:`, (error as Error).message);
-    }
+  const currentPrice = parseWon(snapshot.price);
+
+  const [dartResult, consensusResult, krxResult, newsResult] = await Promise.allSettled([
+    liveProvidersConfigured.dart
+      ? withCache(`dart:${ticker}`, TTL.filings, () => fetchDartFilings(ticker))
+      : Promise.resolve(null),
+    withCache(`consensus:${ticker}`, TTL.consensus, () => fetchConsensus(ticker, currentPrice)),
+    liveProvidersConfigured.krx ? withCache(`krx:${ticker}`, TTL.flows, () => fetchKrxFlows(ticker)) : Promise.resolve(null),
+    liveProvidersConfigured.newsAi
+      ? withCache(`news:${ticker}`, TTL.news, () => fetchGroundedNews(snapshot.name, ticker))
+      : Promise.resolve(null)
+  ]);
+
+  if (dartResult.status === "fulfilled") {
+    if (dartResult.value?.length) snapshot.filings = dartResult.value;
+  } else {
+    console.warn(`[dart] ${ticker} 공시 조회 실패, mock 값 유지:`, dartResult.reason?.message ?? dartResult.reason);
   }
 
-  try {
-    const currentPrice = parseWon(snapshot.price);
-    const result = await withCache(`consensus:${ticker}`, TTL.consensus, () => fetchConsensus(ticker, currentPrice));
-    if (result) {
-      snapshot.consensus = result.consensus;
-      if (result.opinions.length) snapshot.opinions = result.opinions;
+  if (consensusResult.status === "fulfilled") {
+    if (consensusResult.value) {
+      snapshot.consensus = consensusResult.value.consensus;
+      if (consensusResult.value.opinions.length) snapshot.opinions = consensusResult.value.opinions;
     }
-  } catch (error) {
-    console.warn(`[consensus] ${ticker} 조회 실패, mock 값 유지:`, (error as Error).message);
+  } else {
+    console.warn(`[consensus] ${ticker} 조회 실패, mock 값 유지:`, consensusResult.reason?.message ?? consensusResult.reason);
   }
 
-  if (liveProvidersConfigured.krx) {
-    try {
-      const flows = await withCache(`krx:${ticker}`, TTL.flows, () => fetchKrxFlows(ticker));
-      if (flows.length) snapshot.flows = flows;
-    } catch (error) {
-      console.warn(`[krx] ${ticker} 수급 조회 실패, mock 값 유지:`, (error as Error).message);
-    }
+  if (krxResult.status === "fulfilled") {
+    if (krxResult.value?.length) snapshot.flows = krxResult.value;
+  } else {
+    console.warn(`[krx] ${ticker} 수급 조회 실패, mock 값 유지:`, krxResult.reason?.message ?? krxResult.reason);
   }
 
-  if (liveProvidersConfigured.newsAi) {
-    try {
-      const news = await withCache(`news:${ticker}`, TTL.news, () => fetchGroundedNews(snapshot.name, ticker));
-      if (news.length) snapshot.news = news;
-    } catch (error) {
-      console.warn(`[news] ${ticker} 뉴스 조회 실패, mock 값 유지:`, (error as Error).message);
-    }
+  if (newsResult.status === "fulfilled") {
+    if (newsResult.value?.length) snapshot.news = newsResult.value;
+  } else {
+    console.warn(`[news] ${ticker} 뉴스 조회 실패, mock 값 유지:`, newsResult.reason?.message ?? newsResult.reason);
   }
 
   return snapshot;

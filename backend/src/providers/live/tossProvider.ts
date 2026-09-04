@@ -16,7 +16,8 @@ import { env } from "../../env.js";
 let client: TossInvestClient | null = null;
 function getClient(): TossInvestClient {
   if (!client) {
-    client = new TossInvestClient({ clientId: env.tossClientId, clientSecret: env.tossClientSecret });
+    // SDK 기본 timeoutMs는 30초 — 그동안 /api/briefings 요청 전체가 멈춰 있으면 안 되므로 줄인다.
+    client = new TossInvestClient({ clientId: env.tossClientId, clientSecret: env.tossClientSecret, timeoutMs: 8_000 });
   }
   return client;
 }

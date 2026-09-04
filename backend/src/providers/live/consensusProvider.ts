@@ -1,4 +1,5 @@
 import * as cheerio from "cheerio";
+import { fetchWithTimeout } from "../../lib/fetchWithTimeout.js";
 import type { ConsensusInfo, OpinionItem } from "../../types.js";
 
 /**
@@ -22,9 +23,11 @@ export async function fetchConsensus(
   ticker: string,
   currentPrice: number
 ): Promise<{ consensus: ConsensusInfo; opinions: OpinionItem[] } | null> {
-  const res = await fetch(`${CONSENSUS_URL}?cmp_cd=${ticker}`, {
-    headers: { "User-Agent": "Mozilla/5.0 (compatible; stock-briefing-bot/1.0)" }
-  });
+  const res = await fetchWithTimeout(
+    `${CONSENSUS_URL}?cmp_cd=${ticker}`,
+    { headers: { "User-Agent": "Mozilla/5.0 (compatible; stock-briefing-bot/1.0)" } },
+    8_000
+  );
   if (!res.ok) throw new Error(`consensus scrape HTTP ${res.status}`);
   const html = await res.text();
   const $ = cheerio.load(html);
