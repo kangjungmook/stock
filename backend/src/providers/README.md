@@ -11,6 +11,7 @@
 | 컨센서스 (§ 목표주가·투자의견) | **best-effort** | WiseReport 크롤링 (`live/consensusProvider.ts`) | 낮음 — 셀렉터 미검증, 실패 시 자동으로 mock 폴백 |
 | 수급 (§ 외국인·기관 순매수) | **미구현 (stub)** | KRX Open API (`live/krxFlowsProvider.ts`) | 엔드포인트 스펙을 확인 못해 항상 mock 폴백 — 실제 요청/응답 예시가 오면 완성 가능 |
 | 뉴스 | **live** | Gemini API + Google Search grounding (`live/newsProvider.ts`) | 중간 — grounding으로 실제 검색된 사건만 다루도록 강제했지만, 이 세션에서 실제 응답으로 검증은 못 함. 순수 생성(grounding 없이)은 의도적으로 안 씀 — 실제 언론사 이름을 출처로 붙인 가짜 기사 위험 때문 |
+| AI 신호 스펙트럼 (§ 매수~매도 게이지) | **live** | Gemini API, grounding 없이 순수 reasoning (`live/aiVerdictProvider.ts`) | 중간 — 이미 모아둔 판단근거·컨센서스·뉴스·수급만 프롬프트에 넣고 새 사실은 못 지어내게 제한. 실패하면 필드를 아예 비워서 프론트가 위젯을 숨김(근거 없는 점수를 보여주지 않기 위함) |
 | 시장 지수 / 개장 전 추정가(EWY) | mock | — | 나중으로 미룸 (사용자 결정) |
 
 ## 왜 이렇게 나눴는가

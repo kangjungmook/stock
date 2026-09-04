@@ -53,6 +53,12 @@ export interface FactorItem {
   state: FactorState;
 }
 
+export interface AiVerdict {
+  score: number; // -100(강한 매도 신호) ~ +100(강한 매수 신호)
+  summary: string;
+  updatedAt: string;
+}
+
 export interface BriefingSnapshot {
   ticker: string;
   name: string;
@@ -75,6 +81,7 @@ export interface BriefingSnapshot {
   series: number[];
   updated: string;
   upcomingEvent?: { date: string; text: string };
+  aiVerdict?: AiVerdict;
 }
 
 export interface IndexQuote {

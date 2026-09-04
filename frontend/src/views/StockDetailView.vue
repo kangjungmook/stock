@@ -6,6 +6,7 @@ import { useWatchlist } from "@/composables/useWatchlist";
 import { VERDICTS, moveColor, moveLabel } from "@/lib/signals";
 import SignalBadge from "@/components/briefing/SignalBadge.vue";
 import VerdictPanel from "@/components/briefing/VerdictPanel.vue";
+import SpectrumGauge from "@/components/briefing/SpectrumGauge.vue";
 import PriceChart from "@/components/briefing/PriceChart.vue";
 import ConsensusPanel from "@/components/briefing/ConsensusPanel.vue";
 import NewsList from "@/components/briefing/NewsList.vue";
@@ -56,6 +57,11 @@ function removeAndBack() {
       <section class="section">
         <div class="section-label">판단 근거와 신뢰도</div>
         <VerdictPanel :factors="snapshot.factors" :hit-rate="snapshot.hitRate" :sample-n="snapshot.sampleN" />
+      </section>
+
+      <section v-if="snapshot.aiVerdict" class="section">
+        <div class="section-label">AI 신호 스펙트럼</div>
+        <SpectrumGauge :verdict="snapshot.aiVerdict" />
       </section>
 
       <section class="section">
