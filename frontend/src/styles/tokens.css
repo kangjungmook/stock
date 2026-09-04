@@ -1,0 +1,91 @@
+/*
+  디자인 스펙 §03 컬러 토큰 그대로.
+  브랜드 색조 H165(딥그린) + 뉴트럴에 C 0.008~0.018로 섞은 틴티드 뉴트럴.
+  다크(Nocturne)가 기본, 라이트는 명도 반전이 아닌 별도 램프.
+*/
+:root {
+  --bg: oklch(0.973 0.009 165);
+  --surface: oklch(0.996 0.004 165);
+  --sunken: oklch(0.945 0.013 165);
+  --ink: oklch(0.25 0.015 172);
+  --ink2: oklch(0.44 0.017 172);
+  --ink3: oklch(0.565 0.014 172);
+  --rule: oklch(0.25 0.015 172 / 0.13);
+  --rule-soft: oklch(0.25 0.015 172 / 0.08);
+  --tint: oklch(0.25 0.015 172 / 0.045);
+  --brand: oklch(0.355 0.062 165);
+  --brand-soft: oklch(0.465 0.078 165);
+  --brand-ink: oklch(0.975 0.012 165);
+  --up: oklch(0.44 0.095 158);
+  --up-bg: oklch(0.44 0.095 158 / 0.12);
+  --down: oklch(0.47 0.135 26);
+  --down-bg: oklch(0.47 0.135 26 / 0.11);
+  --watch: oklch(0.5 0.105 68);
+  --watch-bg: oklch(0.5 0.105 68 / 0.13);
+  --pos: oklch(0.47 0.07 26);
+  --neg: oklch(0.46 0.055 250);
+
+  /* 추정가 위젯 전용 (차트에 넘길 값은 rgb, UI 토큰은 oklch 유지) */
+  --proxy-act: oklch(0.6 0.048 165);
+  --proxy-act-bg: oklch(0.6 0.048 165 / 0.18);
+  --proxy-act-rgb: 46, 124, 100;
+  --proxy-est: oklch(0.62 0.055 165);
+  --proxy-est-bg: oklch(0.62 0.055 165 / 0.16);
+  --proxy-est-rgb: 104, 140, 124;
+
+  --font-serif: "Gowun Batang", serif;
+  --font-sans: "IBM Plex Sans KR", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+}
+
+[data-theme="dark"] {
+  --bg: oklch(0.207 0.013 168);
+  --surface: oklch(0.256 0.015 168);
+  --sunken: oklch(0.183 0.012 168);
+  --ink: oklch(0.928 0.009 168);
+  --ink2: oklch(0.762 0.013 168);
+  --ink3: oklch(0.625 0.013 168);
+  --rule: oklch(0.98 0.01 168 / 0.15);
+  --rule-soft: oklch(0.98 0.01 168 / 0.09);
+  --tint: oklch(0.98 0.01 168 / 0.05);
+  --brand: oklch(0.735 0.08 165);
+  --brand-soft: oklch(0.805 0.058 165);
+  --brand-ink: oklch(0.19 0.02 165);
+  --up: oklch(0.775 0.085 158);
+  --up-bg: oklch(0.775 0.085 158 / 0.14);
+  --down: oklch(0.755 0.105 28);
+  --down-bg: oklch(0.755 0.105 28 / 0.13);
+  --watch: oklch(0.8 0.09 72);
+  --watch-bg: oklch(0.8 0.09 72 / 0.14);
+  --pos: oklch(0.775 0.075 28);
+  --neg: oklch(0.775 0.055 250);
+
+  --proxy-act: oklch(0.84 0.095 168);
+  --proxy-act-bg: oklch(0.84 0.095 168 / 0.16);
+  --proxy-act-rgb: 150, 226, 199;
+  --proxy-est: oklch(0.62 0.055 165);
+  --proxy-est-bg: oklch(0.6 0.048 165 / 0.18);
+  --proxy-est-rgb: 124, 163, 146;
+}
+
+/* 타입 스케일 §04 — ratio 1.25, clamp() */
+:root {
+  --text-display: clamp(32px, 4.4vw, 54px);
+  --text-h1: clamp(24px, 3vw, 34px);
+  --text-h2: clamp(20px, 2.2vw, 26px);
+  --text-brief: clamp(18px, 1.9vw, 22px);
+  --text-body: clamp(15px, 1.1vw, 17px);
+  --text-data: clamp(14px, 1vw, 16px);
+  --text-meta: 13px;
+  --text-micro: 11.5px;
+
+  /* 간격 — 4px 기반, 8px 배수 우선 */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-6: 24px;
+  --s-8: 32px;
+  --s-12: 48px;
+  --s-16: 64px;
+}

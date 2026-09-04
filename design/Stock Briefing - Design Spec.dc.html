@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500;600&family=Gowun+Batang:wght@400;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:oklch(0.972 0.008 165);}
+  a{color:oklch(0.48 0.09 165);text-decoration:none;border-bottom:1px solid oklch(0.48 0.09 165 / .3);}
+  a:hover{color:oklch(0.38 0.10 165);border-bottom-color:oklch(0.38 0.10 165 / .6);}
+  *{box-sizing:border-box;}
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans KR',system-ui,sans-serif;color:oklch(0.26 0.014 172);background:oklch(0.972 0.008 165);padding:0 0 96px;-webkit-font-smoothing:antialiased;">
+
+  <!-- ── 표지 ── -->
+  <header style="max-width:1120px;margin:0 auto;padding:80px 32px 56px;border-bottom:1px solid oklch(0.26 0.014 172 / .12);">
+    <div style="display:flex;align-items:center;gap:8px;font:500 12px/1 'IBM Plex Mono',monospace;letter-spacing:.09em;text-transform:uppercase;color:oklch(0.52 0.08 165);margin-bottom:24px;">
+      <span style="width:24px;height:1px;background:oklch(0.52 0.08 165);display:block;"></span>
+      <span>Design Spec · v0.2 · 확정판</span>
+    </div>
+    <h1 style="font-family:'Gowun Batang',serif;font-weight:700;font-size:clamp(32px,4.4vw,54px);line-height:1.16;letter-spacing:-0.01em;margin:0 0 24px;max-width:20ch;">개인 브리핑형<br>주식 대시보드</h1>
+    <p style="font-size:clamp(16px,1.4vw,19px);line-height:1.65;max-width:56ch;margin:0;color:oklch(0.40 0.016 172);text-wrap:pretty;">회원가입 없이 관심종목만 넣으면 뜨는 “나만의 화면”. 이 문서는 <strong style="font-weight:600;color:oklch(0.26 0.014 172);">구현된 대시보드와 모바일 8화면의 확정 스펙</strong>입니다 — 화면 구조, 컬러 토큰, 타입 스케일, 상태 정의, 추정가·괴리 규칙.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:32px;">
+      <span style="font:500 12.5px/1 'IBM Plex Mono',monospace;padding:8px 12px;border-radius:4px;background:oklch(0.26 0.014 172 / .06);color:oklch(0.36 0.014 172);">Vue 3 · Composition API</span>
+      <span style="font:500 12.5px/1 'IBM Plex Mono',monospace;padding:8px 12px;border-radius:4px;background:oklch(0.26 0.014 172 / .06);color:oklch(0.36 0.014 172);">OKLCH tokens</span>
+      <span style="font:500 12.5px/1 'IBM Plex Mono',monospace;padding:8px 12px;border-radius:4px;background:oklch(0.26 0.014 172 / .06);color:oklch(0.36 0.014 172);">4px grid</span>
+      <span style="font:500 12.5px/1 'IBM Plex Mono',monospace;padding:8px 12px;border-radius:4px;background:oklch(0.26 0.014 172 / .06);color:oklch(0.36 0.014 172);">Mobile-first feed</span>
+    </div>
+  </header>
+
+  <!-- ── 01 설계 전제 ── -->
+  <section style="max-width:1120px;margin:0 auto;padding:64px 32px 0;">
+    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:32px;">
+      <span style="font:500 12px/1 'IBM Plex Mono',monospace;color:oklch(0.58 0.06 165);">01</span>
+      <h2 style="font-family:'Gowun Batang',serif;font-size:clamp(22px,2.4vw,30px);line-height:1.3;margin:0;font-weight:700;">설계 전제와 판단</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:32px 40px;">
+      <div>
+        <h3 style="font-size:16px;line-height:1.4;margin:0 0 8px;font-weight:600;">비서의 말투로 시작한다</h3>
+        <p style="font-size:15px;line-height:1.7;margin:0;color:oklch(0.42 0.016 172);">숫자판이 아니라 문장이 먼저. 종목 블록의 최상단은 항상 “오늘 이 종목에서 벌어진 일” 한 줄. 시세·차트·컨센서스는 그 문장을 뒷받침하는 근거로 아래에 접혀 있습니다.</p>
+      </div>
+      <div>
+        <h3 style="font-size:16px;line-height:1.4;margin:0 0 8px;font-weight:600;">카드를 쓰지 않는다</h3>
+        <p style="font-size:15px;line-height:1.7;margin:0;color:oklch(0.42 0.016 172);">종목 구분은 테두리 박스가 아니라 <strong style="font-weight:600;">굵은 상단 규칙선 + 48px 여백</strong>으로. 그림자·라운드 박스 중첩은 전면 금지. 표면(surface)은 펼친 상세 안쪽에서만 한 겹 사용합니다.</p>
+      </div>
+      <div>
+        <h3 style="font-size:16px;line-height:1.4;margin:0 0 8px;font-weight:600;">호재/악재는 3중 표기</h3>
+        <p style="font-size:15px;line-height:1.7;margin:0;color:oklch(0.42 0.016 172);">색 + 도형 아이콘 + 텍스트 라벨(“호재 신호”/“악재 신호”/“중립”)을 항상 함께. 색을 못 봐도 의미가 전달되고, 등락은 <strong style="font-weight:600;">▲▼ 기호와 부호</strong>를 병기합니다.</p>
+      </div>
+      <div>
+        <h3 style="font-size:16px;line-height:1.4;margin:0 0 8px;font-weight:600;">로컬 우선, 계정 없음</h3>
+        <p style="font-size:15px;line-height:1.7;margin:0;color:oklch(0.42 0.016 172);">관심종목은 localStorage에 저장 → 첫 진입은 반드시 빈 상태. 그래서 <strong style="font-weight:600;">온보딩 빈 상태가 이 제품의 첫인상</strong>이며, 가장 공들여 설계해야 하는 화면입니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 02 화면 구조 ── -->
+  <section style="max-width:1120px;margin:0 auto;padding:80px 32px 0;">
+    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
+      <span style="font:500 12px/1 'IBM Plex Mono',monospace;color:oklch(0.58 0.06 165);">02</span>
+      <h2 style="font-family:'Gowun Batang',serif;font-size:clamp(22px,2.4vw,30px);line-height:1.3;margin:0;font-weight:700;">화면 구조 (와이어프레임)</h2>
+    </div>
+    <p style="font-size:15px;line-height:1.7;margin:0 0 40px;color:oklch(0.42 0.016 172);max-width:56ch;">단일 페이지 + 오버레이 구조. 라우트 분기는 종목 상세 하나만 두고, 나머지는 모두 피드 안에서 펼쳐집니다.</p>
+
+    <!-- 데스크톱 와이어 -->
+    <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:16px;">
+      <span style="font:500 11.5px/1 'IBM Plex Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:oklch(0.48 0.09 165);">Desktop ≥1024px</span>
+      <span style="font-size:13px;color:oklch(0.55 0.014 172);">— 2열: 브리핑 피드 + 고정 사이드</span>
+    </div>
+    <div style="border:1px solid oklch(0.26 0.014 172 / .18);border-radius:6px;background:oklch(1 0.002 165);padding:16px;margin-bottom:48px;">
+      <!-- 헤더 -->
+      <div style="border:1px dashed oklch(0.48 0.09 165 / .5);border-radius:4px;padding:16px;background:oklch(0.48 0.09 165 / .04);margin-bottom:12px;">
+        <div style="font:500 11px/1 'IBM Plex Mono',monospace;color:oklch(0.45 0.09 165);margin-bottom:12px;">HEADER · sticky, 64px</div>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+          <div style="height:32px;padding:0 12px;display:flex;align-items:center;border-radius:4px;background:oklch(0.26 0.014 172 / .10);font-size:13px;">로고</div>
+          <div style="display:flex;gap:2px;">
+            <div style="height:36px;padding:0 10px;display:flex;align-items:center;border-radius:4px;background:oklch(0.26 0.014 172 / .07);font-size:12.5px;font-weight:600;">브리핑</div>
+            <div style="height:36px;padding:0 10px;display:flex;align-items:center;border-radius:4px;font-size:12.5px;color:oklch(0.50 0.014 172);">개장 전 추정가</div>
+            <div style="height:36px;padding:0 10px;display:flex;align-items:center;border-radius:4px;font-size:12.5px;color:oklch(0.50 0.014 172);">커피 한 잔</div>
+          </div>
+          <div style="flex:1;min-width:220px;height:40px;display:flex;align-items:center;padding:0 12px;border-radius:4px;border:1px solid oklch(0.26 0.014 172 / .22);font-size:13px;color:oklch(0.50 0.014 172);">종목명·티커 검색 (자동완성) — “삼성전자, 005930…”</div>
+          <div style="height:40px;padding:0 16px;display:flex;align-items:center;border-radius:4px;background:oklch(0.30 0.05 165);color:oklch(0.97 0.01 165);font-size:13px;">관심종목에 추가</div>
+          <div style="height:40px;width:40px;display:flex;align-items:center;justify-content:center;border-radius:4px;border:1px solid oklch(0.26 0.014 172 / .22);font-size:13px;">◐</div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+          <div style="height:32px;padding:0 10px;display:flex;align-items:center;gap:8px;border-radius:16px;background:oklch(0.26 0.014 172 / .07);font-size:12.5px;">삼성전자 <span style="opacity:.5;">×</span></div>
+          <div style="height:32px;padding:0 10px;display:flex;align-items:center;gap:8px;border-radius:16px;background:oklch(0.26 0.014 172 / .07);font-size:12.5px;">SK하이닉스 <span style="opacity:.5;">×</span></div>
+          <div style="height:32px;padding:0 10px;display:flex;align-items:center;gap:8px;border-radius:16px;background:oklch(0.26 0.014 172 / .07);font-size:12.5px;">카카오 <span style="opacity:.5;">×</span></div>
+          <div style="height:32px;padding:0 10px;display:flex;align-items:center;border-radius:16px;border:1px dashed oklch(0.26 0.014 172 / .28);font-size:12.5px;color:oklch(0.50 0.014 172);">+ 종목 추가</div>
+        </div>
+        <div style="margin-top:12px;padding:8px 12px;border-radius:4px;background:oklch(0.26 0.014 172 / .05);display:flex;align-items:center;gap:16px;overflow:hidden;">
+          <span style="font-size:11.5px;color:oklch(0.52 0.014 172);white-space:nowrap;">시장 지수</span>
+          <span style="font-size:11.5px;color:oklch(0.42 0.016 172);white-space:nowrap;">코스피 3,184.62 ▲ +0.77%</span>
+          <span style="font-size:11.5px;color:oklch(0.42 0.016 172);white-space:nowrap;">나스닥 26,584.06</span>
+          <span style="font-size:11.5px;color:oklch(0.52 0.014 172);white-space:nowrap;">S&amp;P 500 · 필라델피아 반도체 · VIX</span>
+          <span style="margin-left:auto;font-size:11px;color:oklch(0.55 0.014 172);">접기 ⌄</span>
+        </div>
+        <div style="font-size:12px;color:oklch(0.52 0.014 172);margin-top:12px;">칩 드래그로 브리핑 순서 재정렬 · 44px 히트영역 확보 · 지수 띠는 접기 가능</div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 320px;gap:12px;">
+        <div>
+          <!-- 오늘의 요약 -->
+          <div style="border:1px dashed oklch(0.26 0.014 172 / .3);border-radius:4px;padding:16px;margin-bottom:12px;">
+            <div style="font:500 11px/1 'IBM Plex Mono',monospace;color:oklch(0.48 0.014 172);margin-bottom:12px;">TODAY'S BRIEF · 하루 한 문단</div>
+            <div style="height:14px;width:70%;border-radius:2px;background:oklch(0.26 0.014 172 / .18);margin-bottom:8px;"></div>
+            <div style="height:10px;width:92%;border-radius:2px;background:oklch(0.26 0.014 172 / .10);margin-bottom:6px;"></div>
+            <div style="height:10px;width:48%;border-radius:2px;background:oklch(0.26 0.014 172 / .10);"></div>
+          </div>
+          <!-- 브리핑 블록 접힘 -->
+          <div style="border-top:2px solid oklch(0.30 0.05 165);padding:16px 0 24px;">
+            <div style="font:500 11px/1 'IBM Plex Mono',monospace;color:oklch(0.45 0.09 165);margin-bottom:12px;">BRIEFING BLOCK · 접힘(기본)</div>
+            <div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start;">
+              <div style="flex:1;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                  <div style="height:16px;width:96px;border-radius:2px;background:oklch(0.26 0.014 172 / .22);"></div>
+                  <div style="height:20px;padding:0 8px;display:flex;align-items:center;gap:4px;border-radius:3px;background:oklch(0.55 0.10 160 / .14);font-size:11px;color:oklch(0.38 0.08 160);">◆ 호재 신호</div>
+                </div>
+                <div style="height:13px;width:88%;border-radius:2px;background:oklch(0.26 0.014 172 / .16);margin-bottom:6px;"></div>
+                <div style="height:13px;width:46%;border-radius:2px;background:oklch(0.26 0.014 172 / .16);"></div>
+              </div>
+              <div style="text-align:right;flex:none;">
+                <div style="height:18px;width:88px;border-radius:2px;background:oklch(0.26 0.014 172 / .2);margin-bottom:6px;margin-left:auto;"></div>
+                <div style="height:11px;width:64px;border-radius:2px;background:oklch(0.26 0.014 172 / .12);margin-left:auto;"></div>
+              </div>
+            </div>
+            <div style="height:40px;margin-top:12px;border:1px dashed oklch(0.26 0.014 172 / .25);border-radius:4px;display:flex;align-items:center;padding:0 12px;font-size:12.5px;color:oklch(0.50 0.014 172);">근거 3건 · 상세 펼치기 ⌄</div>
+          </div>
+          <!-- 브리핑 블록 펼침 -->
+          <div style="border-top:2px solid oklch(0.30 0.05 165);padding:16px 0 8px;">
+            <div style="font:500 11px/1 'IBM Plex Mono',monospace;color:oklch(0.45 0.09 165);margin-bottom:12px;">BRIEFING BLOCK · 펼침</div>
+            <div style="height:16px;width:40%;border-radius:2px;background:oklch(0.26 0.014 172 / .22);margin-bottom:16px;"></div>
+            <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+              <div style="height:36px;padding:0 12px;display:flex;align-items:center;border-bottom:2px solid oklch(0.30 0.05 165);font-size:13px;">뉴스 6</div>
+              <div style="height:36px;padding:0 12px;display:flex;align-items:center;font-size:13px;color:oklch(0.50 0.014 172);">공시 2</div>
+              <div style="height:36px;padding:0 12px;display:flex;align-items:center;font-size:13px;color:oklch(0.50 0.014 172);">컨센서스</div>
+              <div style="height:36px;padding:0 12px;display:flex;align-items:center;font-size:13px;color:oklch(0.50 0.014 172);">차트</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div style="background:oklch(0.26 0.014 172 / .04);border-radius:4px;padding:12px;">
+                <div style="font-size:11.5px;color:oklch(0.48 0.014 172);margin-bottom:8px;">뉴스·공시 리스트 (시간순, 신호 배지 인라인)</div>
+                <div style="height:9px;width:90%;border-radius:2px;background:oklch(0.26 0.014 172 / .14);margin-bottom:8px;"></div>
+                <div style="height:9px;width:76%;border-radius:2px;background:oklch(0.26 0.014 172 / .14);margin-bottom:8px;"></div>
+                <div style="height:9px;width:84%;border-radius:2px;background:oklch(0.26 0.014 172 / .14);"></div>
+              </div>
+              <div style="background:oklch(0.26 0.014 172 / .04);border-radius:4px;padding:12px;">
+                <div style="font-size:11.5px;color:oklch(0.48 0.014 172);margin-bottom:8px;">스파크라인 + 컨센서스 목표가 밴드</div>
+                <div style="height:64px;border-radius:3px;background:linear-gradient(to top,oklch(0.30 0.05 165 / .10),transparent);border-bottom:1px solid oklch(0.30 0.05 165 / .4);"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- 사이드 -->
+        <div style="border:1px dashed oklch(0.26 0.014 172 / .3);border-radius:4px;padding:16px;align-self:start;">
+          <div style="font:500 11px/1 'IBM Plex Mono',monospace;color:oklch(0.48 0.014 172);margin-bottom:12px;">SIDE RAIL · sticky</div>
+          <div style="font-size:12.5px;line-height:2;color:oklch(0.44 0.016 172);">
+            · 오늘의 신호 요약 (호재 n · 악재 n)<br>
+            · 관심종목 등락 미니 리스트<br>
+            · 예정된 일정 (실적·배당·공시)<br>
+            · 마지막 갱신 시각 / 새로고침
+          </div>
+          <div style="font-size:12px;color:oklch(0.55 0.014 172);margin-top:16px;padding-top:12px;border-top:1px solid oklch(0.26 0.014 172 / .12);">≤1023px에서는 레일이 피드 아래로 내려가고, 피드 상단에는 44px 신호 요약 칩만 남음</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 모바일 와이어 -->
+    <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:16px;">
+      <span style="font:500 11.5px/1 'IBM Plex Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:oklch(0.48 0.09 165);">Mobile ≤640px</span>
+      <span style="font-size:13px;color:oklch(0.55 0.014 172);">— 단일 컬럼 브리핑 피드</span>
+    </div>
+    <div style="display:flex;gap:24px;flex-wrap:wrap;">
+      <div style="width:288px;border:1px solid oklch(0.26 0.014 172 / .18);border-radius:8px;background:oklch(1 0.002 165);padding:12px;">
+        <div style="font:500 10.5px/1 'IBM Plex Mono',monospace;color:oklch(0.45 0.09 165);margin-bottom:8px;">① 피드</div>
+        <div style="height:36px;border:1px solid oklch(0.26 0.014 172 / .22);border-radius:4px;display:flex;align-items:center;padding:0 8px;font-size:11.5px;color:oklch(0.52 0.014 172);margin-bottom:8px;">검색 (탭하면 전체화면 시트)</div>
+        <div style="display:flex;gap:4px;overflow:hidden;margin-bottom:16px;">
+          <div style="height:28px;padding:0 8px;border-radius:14px;background:oklch(0.26 0.014 172 / .07);font-size:11px;display:flex;align-items:center;">삼성전자</div>
+          <div style="height:28px;padding:0 8px;border-radius:14px;background:oklch(0.26 0.014 172 / .07);font-size:11px;display:flex;align-items:center;">SK하이닉스</div>
+          <div style="height:28px;padding:0 8px;border-radius:14px;background:oklch(0.26 0.014 172 / .07);font-size:11px;display:flex;align-items:center;">→</div>
+        </div>
+        <div style="border-top:2px solid oklch(0.30 0.05 165);padding:12px 0 20px;">
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:8px;"><strong style="font-weight:600;">삼성전자</strong><span>▲ +1.8%</span></div>
+          <div style="height:18px;padding:0 6px;display:inline-flex;align-items:center;border-radius:3px;background:oklch(0.55 0.10 160 / .14);font-size:10.5px;color:oklch(0.36 0.08 160);margin-bottom:8px;">◆ 호재 신호</div>
+          <div style="height:10px;width:100%;border-radius:2px;background:oklch(0.26 0.014 172 / .16);margin-bottom:6px;"></div>
+          <div style="height:10px;width:60%;border-radius:2px;background:oklch(0.26 0.014 172 / .16);margin-bottom:12px;"></div>
+          <div style="height:44px;border-radius:4px;border:1px dashed oklch(0.26 0.014 172 / .25);display:flex;align-items:center;justify-content:center;font-size:11.5px;color:oklch(0.50 0.014 172);">근거 3건 펼치기 ⌄</div>
+        </div>
+        <div style="border-top:2px solid oklch(0.30 0.05 165);padding:12px 0;">
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:8px;"><strong style="font-weight:600;">카카오</strong><span>▼ −2.4%</span></div>
+          <div style="height:18px;padding:0 6px;display:inline-flex;align-items:center;border-radius:3px;background:oklch(0.55 0.14 25 / .13);font-size:10.5px;color:oklch(0.42 0.13 25);">▽ 악재 신호</div>
+        </div>
+      </div>
+      <div style="width:288px;border:1px solid oklch(0.26 0.014 172 / .18);border-radius:8px;background:oklch(1 0.002 165);padding:12px;">
+        <div style="font:500 10.5px/1 'IBM Plex Mono',monospace;color:oklch(0.45 0.09 165);margin-bottom:8px;">② 검색 시트 (전체화면)</div>
+        <div style="height:40px;border:1px solid oklch(0.30 0.05 165);border-radius:4px;display:flex;align-items:center;padding:0 8px;font-size:12px;margin-bottom:12px;">삼성<span style="width:1px;height:16px;background:oklch(0.30 0.05 165);margin-left:2px;"></span></div>
+        <div style="font-size:11px;color:oklch(0.52 0.014 172);margin-bottom:8px;">자동완성 · 최대 8건 · 키보드 ↑↓</div>
+        <div style="display:flex;flex-direction:column;gap:1px;">
+          <div style="height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 8px;background:oklch(0.30 0.05 165 / .07);border-radius:4px;font-size:12px;"><span><strong style="font-weight:600;">삼성</strong>전자</span><span style="font:400 11px 'IBM Plex Mono',monospace;color:oklch(0.52 0.014 172);">005930</span></div>
+          <div style="height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 8px;font-size:12px;"><span><strong style="font-weight:600;">삼성</strong>SDI</span><span style="font:400 11px 'IBM Plex Mono',monospace;color:oklch(0.52 0.014 172);">006400</span></div>
+          <div style="height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 8px;font-size:12px;"><span><strong style="font-weight:600;">삼성</strong>바이오로직스</span><span style="font:400 11px 'IBM Plex Mono',monospace;color:oklch(0.52 0.014 172);">207940</span></div>
+        </div>
+        <div style="font-size:11px;color:oklch(0.52 0.014 172);margin-top:12px;">행 높이 48px · 이미 등록된 종목은 “등록됨” 표기로 비활성</div>
+      </div>
+      <div style="width:288px;border:1px solid oklch(0.26 0.014 172 / .18);border-radius:8px;background:oklch(1 0.002 165);padding:12px;">
+        <div style="font:500 10.5px/1 'IBM Plex Mono',monospace;color:oklch(0.45 0.09 165);margin-bottom:8px;">③ 종목 상세 (유일한 라우트)</div>
+        <div style="font-size:11.5px;line-height:2;color:oklch(0.44 0.016 172);">
+          · 헤더: 종목명 · 현재가 · 신호 배지<br>
+          · 기간 전환 차트 (1D/1W/3M/1Y)<br>
+          · 컨센서스: 목표가 분포 + 투자의견<br>
+          · 뉴스 전체 타임라인<br>
+          · 공시 원문 링크<br>
+          · 하단 고정: “관심종목에서 빼기”
+        </div>
+        <div style="margin-top:16px;padding-top:12px;border-top:1px solid oklch(0.26 0.014 172 / .12);font-size:11px;color:oklch(0.55 0.014 172);">피드 → 상세는 이름/가격 요소가 이어지는 200ms transform 전환</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 03 컬러 토큰 ── -->
+  <section style="max-width:1120px;margin:0 auto;padding:80px 32px 0;">
+    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
+      <span style="font:500 12px/1 'IBM Plex Mono',monospace;color:oklch(0.58 0.06 165);">03</span>
+      <h2 style="font-family:'Gowun Batang',serif;font-size:clamp(22px,2.4vw,30px);line-height:1.3;margin:0;font-weight:700;">컬러 토큰 (OKLCH)</h2>
+    </div>
+    <p style="font-size:15px;line-height:1.7;margin:0 0 40px;color:oklch(0.42 0.016 172);max-width:60ch;">브랜드 색조 <strong style="font-weight:600;">H 165 (딥그린)</strong>를 뉴트럴에 C 0.008~0.018로 미세하게 섞어 “틴티드 뉴트럴”을 만듭니다. 순수 블랙·순수 화이트 미사용. <strong style="font-weight:600;">다크(Nocturne)가 기본</strong>이며, 라이트는 명도 반전이 아닌 별도 램프로 재설계 — 표면이 배경보다 밝아지고, 신호색은 채도를 낮추고 명도를 올립니다.</p>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:40px;">
+      <!-- LIGHT -->
+      <div>
+        <h3 style="font:500 12px/1 'IBM Plex Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:oklch(0.48 0.09 165);margin:0 0 16px;">Light</h3>
+        <div style="display:flex;flex-direction:column;gap:1px;">
+          <sc-for list="{{ lightTokens }}" as="t" hint-placeholder-count="10">
+            <div style="display:grid;grid-template-columns:32px 1fr auto;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid oklch(0.26 0.014 172 / .08);">
+              <span style="width:32px;height:32px;border-radius:4px;border:1px solid oklch(0.26 0.014 172 / .14);background:{{ t.v }};display:block;"></span>
+              <span>
+                <span style="display:block;font:500 12.5px/1.4 'IBM Plex Mono',monospace;">{{ t.n }}</span>
+                <span style="display:block;font-size:11.5px;color:oklch(0.52 0.014 172);margin-top:2px;">{{ t.d }}</span>
+              </span>
+              <span style="font:400 11px/1.4 'IBM Plex Mono',monospace;color:oklch(0.45 0.014 172);text-align:right;">{{ t.v }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <!-- DARK -->
+      <div style="background:oklch(0.215 0.012 172);border-radius:6px;padding:24px;margin:-24px -24px 0;">
+        <h3 style="font:500 12px/1 'IBM Plex Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:oklch(0.74 0.06 165);margin:0 0 16px;">Dark</h3>
+        <div style="display:flex;flex-direction:column;gap:1px;">
+          <sc-for list="{{ darkTokens }}" as="t" hint-placeholder-count="10">
+            <div style="display:grid;grid-template-columns:32px 1fr auto;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid oklch(0.98 0.01 165 / .08);">
+              <span style="width:32px;height:32px;border-radius:4px;border:1px solid oklch(0.98 0.01 165 / .16);background:{{ t.v }};display:block;"></span>
+              <span>
+                <span style="display:block;font:500 12.5px/1.4 'IBM Plex Mono',monospace;color:oklch(0.93 0.008 168);">{{ t.n }}</span>
+                <span style="display:block;font-size:11.5px;color:oklch(0.66 0.012 168);margin-top:2px;">{{ t.d }}</span>
+              </span>
+              <span style="font:400 11px/1.4 'IBM Plex Mono',monospace;color:oklch(0.70 0.012 168);text-align:right;">{{ t.v }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <!-- 신호 색 사용 규칙 -->
+    <div style="margin-top:48px;">
+      <h3 style="font-size:17px;font-weight:600;margin:0 0 16px;">신호 표기 규칙 — 색 + 도형 + 텍스트</h3>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:8px;height:32px;padding:0 12px;border-radius:4px;background:oklch(0.55 0.10 160 / .13);color:oklch(0.36 0.08 160);font-size:13px;font-weight:500;"><span style="font-size:11px;">◆</span>호재 신호</div>
+        <div style="display:flex;align-items:center;gap:8px;height:32px;padding:0 12px;border-radius:4px;background:oklch(0.55 0.14 25 / .12);color:oklch(0.42 0.13 25);font-size:13px;font-weight:500;"><span style="font-size:11px;">▽</span>악재 신호</div>
+        <div style="display:flex;align-items:center;gap:8px;height:32px;padding:0 12px;border-radius:4px;background:oklch(0.26 0.014 172 / .07);color:oklch(0.42 0.016 172);font-size:13px;font-weight:500;"><span style="font-size:11px;">◇</span>중립·관망</div>
+        <div style="display:flex;align-items:center;gap:8px;height:32px;padding:0 12px;border-radius:4px;background:oklch(0.62 0.12 75 / .14);color:oklch(0.44 0.10 60);font-size:13px;font-weight:500;"><span style="font-size:11px;">◈</span>확인 필요</div>
+      </div>
+      <p style="font-size:14.5px;line-height:1.7;margin:0;color:oklch(0.42 0.016 172);max-width:64ch;">한국 관행상 상승=적색이지만 색약 사용자에게 적/녹 대립은 최악의 조합입니다. 확정안은 <strong style="font-weight:600;">기호 + 저채도 틴트</strong> — 방향은 ▲▼와 부호가 전달하고, 색은 채도를 낮춘 <code style="font:400 12.5px 'IBM Plex Mono',monospace;">--pos</code>(H26) / <code style="font:400 12.5px 'IBM Plex Mono',monospace;">--neg</code>(H250)로 거들기만 합니다. 채도가 높은 신호색(호재 ◆ / 악재 ▽)은 브리핑 배지에만 쓰고, 두 배지는 색 없이도 도형으로 구분됩니다.</p>
+    </div>
+  </section>
+
+  <!-- ── 04 타입 & 간격 ── -->
+  <section style="max-width:1120px;margin:0 auto;padding:80px 32px 0;">
+    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:32px;">
+      <span style="font:500 12px/1 'IBM Plex Mono',monospace;color:oklch(0.58 0.06 165);">04</span>
+      <h2 style="font-family:'Gowun Batang',serif;font-size:clamp(22px,2.4vw,30px);line-height:1.3;margin:0;font-weight:700;">타이포그래피 &amp; 간격</h2>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:40px;">
+      <div>
+        <h3 style="font-size:16px;font-weight:600;margin:0 0 8px;">서체 조합</h3>
+        <p style="font-size:14.5px;line-height:1.7;color:oklch(0.42 0.016 172);margin:0 0 16px;">제목·브리핑 문장에는 명조(<strong style="font-weight:600;">Gowun Batang</strong>) — 비서가 써준 메모의 톤. 본문·데이터는 <strong style="font-weight:600;">IBM Plex Sans KR</strong>, 숫자/티커는 <strong style="font-weight:600;">IBM Plex Mono</strong>로 자리수를 고정합니다. (Inter·Roboto 미사용)</p>
+        <div style="padding:16px;background:oklch(0.26 0.014 172 / .04);border-radius:4px;">
+          <div style="font-family:'Gowun Batang',serif;font-size:22px;line-height:1.4;margin-bottom:8px;">HBM 수요 회복 신호가 잡혔습니다</div>
+          <div style="font-size:14px;line-height:1.7;color:oklch(0.42 0.016 172);margin-bottom:8px;">3분기 컨센서스가 2주 연속 상향 조정되었고, 외국인 순매수가 5거래일째 이어집니다.</div>
+          <div style="font:500 14px 'IBM Plex Mono',monospace;">71,400 <span style="color:oklch(0.45 0.014 172);">▲ +1.84%</span></div>
+        </div>
+      </div>
+      <div>
+        <h3 style="font-size:16px;font-weight:600;margin:0 0 16px;">모듈러 스케일 · ratio 1.25 / clamp()</h3>
+        <div style="display:flex;flex-direction:column;gap:1px;">
+          <sc-for list="{{ typeScale }}" as="s" hint-placeholder-count="7">
+            <div style="display:grid;grid-template-columns:88px 1fr;gap:16px;align-items:baseline;padding:8px 0;border-bottom:1px solid oklch(0.26 0.014 172 / .08);">
+              <span style="font:500 11.5px/1.4 'IBM Plex Mono',monospace;color:oklch(0.48 0.09 165);">{{ s.n }}</span>
+              <span style="font:400 11.5px/1.5 'IBM Plex Mono',monospace;color:oklch(0.45 0.014 172);">{{ s.v }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <p style="font-size:13.5px;line-height:1.7;color:oklch(0.48 0.016 172);margin:16px 0 0;">행간: 제목 1.2~1.3 / 본문 1.7 / 데이터 1.4. 한국어 본문은 <code style="font:400 12.5px 'IBM Plex Mono',monospace;">word-break:keep-all</code> + <code style="font:400 12.5px 'IBM Plex Mono',monospace;">text-wrap:pretty</code>.</p>
+      </div>
+    </div>
+
+    <div style="margin-top:48px;">
+      <h3 style="font-size:16px;font-weight:600;margin:0 0 16px;">간격 — 4px 기반, 8px 배수 우선</h3>
+      <div style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;">
+        <sc-for list="{{ spacing }}" as="sp" hint-placeholder-count="8">
+          <div style="text-align:center;">
+            <div style="width:{{ sp.px }};height:24px;background:oklch(0.30 0.05 165 / .22);border-left:1px solid oklch(0.30 0.05 165);border-right:1px solid oklch(0.30 0.05 165);margin-bottom:8px;"></div>
+            <div style="font:500 11px/1.3 'IBM Plex Mono',monospace;">{{ sp.n }}</div>
+            <div style="font:400 10.5px/1.3 'IBM Plex Mono',monospace;color:oklch(0.52 0.014 172);">{{ sp.px }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <p style="font-size:14px;line-height:1.7;color:oklch(0.42 0.016 172);margin:16px 0 0;max-width:60ch;">섹션 간 <strong style="font-weight:600;">48px(모바일) / 64px(데스크톱)</strong>, 브리핑 블록 내부 <strong style="font-weight:600;">16px</strong>, 인라인 요소 <strong style="font-weight:600;">8px</strong>. 4px는 아이콘-텍스트 미세 정렬에만.</p>
+    </div>
+  </section>
+
+  <!-- ── 05 상태 정의 ── -->
+  <section style="max-width:1120px;margin:0 auto;padding:80px 32px 0;">
+    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
+      <span style="font:500 12px/1 'IBM Plex Mono',monospace;color:oklch(0.58 0.06 165);">05</span>
+      <h2 style="font-family:'Gowun Batang',serif;font-size:clamp(22px,2.4vw,30px);line-height:1.3;margin:0;font-weight:700;">빈 상태 · 로딩 · 예외</h2>
+    </div>
+    <p style="font-size:15px;line-height:1.7;margin:0 0 40px;color:oklch(0.42 0.016 172);max-width:56ch;">4가지 상태를 컴포넌트 레벨에서 명시적으로 정의합니다. 문구는 모두 행동 서술형.</p>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:32px;">
+      <div style="border-top:2px solid oklch(0.30 0.05 165);padding-top:16px;">
+        <div style="font:500 11px/1 'IBM Plex Mono',monospace;color:oklch(0.48 0.09 165);margin-bottom:12px;">A · 첫 진입 (종목 0개)</div>
+        <div style="font-family:'Gowun Batang',serif;font-size:19px;line-height:1.45;margin-bottom:8px;">아직 지켜볼 종목이 없습니다</div>
+        <p style="font-size:14px;line-height:1.7;color:oklch(0.44 0.016 172);margin:0 0 16px;">한 종목만 넣어도 오늘의 브리핑이 만들어집니다.</p>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          <span style="height:36px;padding:0 12px;display:flex;align-items:center;border-radius:18px;border:1px solid oklch(0.30 0.05 165 / .35);font-size:13px;color:oklch(0.34 0.06 165);">+ 삼성전자</span>
+          <span style="height:36px;padding:0 12px;display:flex;align-items:center;border-radius:18px;border:1px solid oklch(0.30 0.05 165 / .35);font-size:13px;color:oklch(0.34 0.06 165);">+ SK하이닉스</span>
+        </div>
+        <p style="font-size:12.5px;color:oklch(0.52 0.014 172);margin:16px 0 0;">추천 칩은 “예시로 채워보기” 용도 — 언제든 지울 수 있음을 명시.</p>
+      </div>
+
+      <div style="border-top:2px solid oklch(0.30 0.05 165);padding-top:16px;">
+        <div style="font:500 11px/1 'IBM Plex Mono',monospace;color:oklch(0.48 0.09 165);margin-bottom:12px;">B · 로딩 (스켈레톤)</div>
+        <div style="height:14px;width:56%;border-radius:2px;background:oklch(0.26 0.014 172 / .12);margin-bottom:8px;"></div>
+        <div style="height:11px;width:88%;border-radius:2px;background:oklch(0.26 0.014 172 / .08);margin-bottom:6px;"></div>
+        <div style="height:11px;width:64%;border-radius:2px;background:oklch(0.26 0.014 172 / .08);margin-bottom:16px;"></div>
+        <p style="font-size:14px;line-height:1.7;color:oklch(0.44 0.016 172);margin:0;">스피너 없음. 실제 레이아웃 형태의 스켈레톤 + 1.6s opacity 펄스(0.6→1). <code style="font:400 12.5px 'IBM Plex Mono',monospace;">prefers-reduced-motion</code>에서는 정적.</p>
+      </div>
+
+      <div style="border-top:2px solid oklch(0.30 0.05 165);padding-top:16px;">
+        <div style="font:500 11px/1 'IBM Plex Mono',monospace;color:oklch(0.48 0.09 165);margin-bottom:12px;">C · 데이터 없음 (종목은 있음)</div>
+        <div style="font-family:'Gowun Batang',serif;font-size:19px;line-height:1.45;margin-bottom:8px;">오늘은 조용합니다</div>
+        <p style="font-size:14px;line-height:1.7;color:oklch(0.44 0.016 172);margin:0 0 16px;">새 뉴스·공시가 없습니다. 마지막 소식은 3일 전이었어요.</p>
+        <span style="height:36px;padding:0 12px;display:inline-flex;align-items:center;border-radius:4px;border:1px solid oklch(0.26 0.014 172 / .22);font-size:13px;">지난 소식 보기</span>
+        <p style="font-size:12.5px;color:oklch(0.52 0.014 172);margin:16px 0 0;">“무소식”도 정보다 — 블록을 숨기지 않고 조용함을 명시.</p>
+      </div>
+
+      <div style="border-top:2px solid oklch(0.62 0.12 75);padding-top:16px;">
+        <div style="font:500 11px/1 'IBM Plex Mono',monospace;color:oklch(0.44 0.10 60);margin-bottom:12px;">D · 불러오기 실패</div>
+        <div style="display:flex;align-items:center;gap:8px;height:32px;padding:0 12px;border-radius:4px;background:oklch(0.62 0.12 75 / .14);color:oklch(0.42 0.10 60);font-size:13px;font-weight:500;margin-bottom:12px;"><span style="font-size:11px;">◈</span>확인 필요</div>
+        <p style="font-size:14px;line-height:1.7;color:oklch(0.44 0.016 172);margin:0 0 16px;">시세를 못 받아왔습니다. 뉴스는 정상이라 아래는 그대로 볼 수 있습니다.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <span style="height:36px;padding:0 12px;display:inline-flex;align-items:center;border-radius:4px;background:oklch(0.30 0.05 165);color:oklch(0.97 0.01 165);font-size:13px;">시세만 다시 받기</span>
+          <span style="height:36px;padding:0 12px;display:inline-flex;align-items:center;border-radius:4px;font-size:13px;color:oklch(0.44 0.016 172);">지금은 넘어가기</span>
+        </div>
+        <p style="font-size:12.5px;color:oklch(0.52 0.014 172);margin:16px 0 0;">부분 실패는 부분만 표시. 화면 전체를 에러로 덮지 않음.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 06 모션 & 컴포넌트 목록 ── -->
+  <section style="max-width:1120px;margin:0 auto;padding:80px 32px 0;">
+    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:32px;">
+      <span style="font:500 12px/1 'IBM Plex Mono',monospace;color:oklch(0.58 0.06 165);">06</span>
+      <h2 style="font-family:'Gowun Batang',serif;font-size:clamp(22px,2.4vw,30px);line-height:1.3;margin:0;font-weight:700;">모션 &amp; 구현 단위</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:40px;">
+      <div>
+        <h3 style="font-size:16px;font-weight:600;margin:0 0 16px;">모션 원칙</h3>
+        <div style="font-size:14.5px;line-height:1.9;color:oklch(0.42 0.016 172);">
+          · 전체 <strong style="font-weight:600;">transform / opacity만</strong> 사용<br>
+          · 상세 펼치기 200ms <code style="font:400 12.5px 'IBM Plex Mono',monospace;">cubic-bezier(.32,.72,0,1)</code><br>
+          · hover: 배경 3% 틴트 + 좌측 규칙선 굵기 변화, 이동 없음<br>
+          · focus-visible: 2px 브랜드 아웃라인 + 2px offset<br>
+          · 숫자 갱신은 100ms 밝기 플래시 1회 (깜빡임 반복 금지)<br>
+          · <code style="font:400 12.5px 'IBM Plex Mono',monospace;">prefers-reduced-motion</code>: 모든 전환 0ms
+        </div>
+      </div>
+      <div>
+        <h3 style="font-size:16px;font-weight:600;margin:0 0 16px;">Vue 3 컴포넌트 트리</h3>
+        <div style="font:400 12.5px/2 'IBM Plex Mono',monospace;color:oklch(0.40 0.016 172);">
+          App.vue<br>
+          ├ TheHeader<br>
+          │ ├ MainNav (브리핑 / 추정가 / 커피 한 잔)<br>
+          │ ├ TickerSearch (useTickerSearch)<br>
+          │ ├ WatchlistChips (drag reorder)<br>
+          │ └ MarketIndexBar (접기 가능)<br>
+          ├ BriefingView<br>
+          │ ├ SignalFilterChips<br>
+          │ ├ DailyBrief (톤 3단)<br>
+          │ ├ BriefingBlock ×n<br>
+          │ │ ├ SignalBadge · PriceReadout<br>
+          │ │ ├ VerdictPanel (근거 4축 + 적중률)<br>
+          │ │ └ BlockDetail (뉴스/공시/컨센서스/차트/수급)<br>
+          │ ├ SideRail (≥1024px, 이하 피드 아래)<br>
+          │ └ PwaPrompt (모바일 1회)<br>
+          ├ ProxyView<br>
+          │ ├ ProxyTargetChips (지수 전체 / 종목별)<br>
+          │ ├ DivergenceStrip (괴리 정보 + 환율 보정)<br>
+          │ ├ ProxyChart (Lightweight Charts)<br>
+          │ ├ TimeframeTabs (1분~월)<br>
+          │ ├ DivergenceBars (24구간)<br>
+          │ └ ProxyCoverageList (지수 대표성)<br>
+          ├ SupportView (프리셋 · 송금 링크)<br>
+          └ StockDetailView (route)<br>
+          <br>
+          composables: useWatchlist(localStorage) ·<br>useBriefing · useProxy · useDivergence ·<br>useTheme · usePolling
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 07 확정된 결정 ── -->
+  <section style="max-width:1120px;margin:0 auto;padding:80px 32px 0;">
+    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:32px;">
+      <span style="font:500 12px/1 'IBM Plex Mono',monospace;color:oklch(0.58 0.06 165);">07</span>
+      <h2 style="font-family:'Gowun Batang',serif;font-size:clamp(22px,2.4vw,30px);line-height:1.3;margin:0;font-weight:700;">확정된 결정</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:28px 40px;">
+      <div><h3 style="font-size:15px;font-weight:600;margin:0 0 8px;">브랜드 색조 H 165 딥그린</h3><p style="font-size:14px;line-height:1.7;color:oklch(0.42 0.016 172);margin:0;">상승 적색 / 하락 청색 관행과 색조가 겹치지 않는 유일한 축. 뉴트럴에도 C 0.009~0.015로 섞어 틴티드 뉴트럴을 만듭니다.</p></div>
+      <div><h3 style="font-size:15px;font-weight:600;margin:0 0 8px;">다크(Nocturne) 기본</h3><p style="font-size:14px;line-height:1.7;color:oklch(0.42 0.016 172);margin:0;">기본값이 다크, 라이트는 별도 램프. 표면이 배경보다 밝아지고 텍스트는 순백을 쓰지 않습니다.</p></div>
+      <div><h3 style="font-size:15px;font-weight:600;margin:0 0 8px;">등락은 기호 + 저채도 틴트</h3><p style="font-size:14px;line-height:1.7;color:oklch(0.42 0.016 172);margin:0;">▲▼와 부호로 방향을 표시하고, 색은 채도를 낮춘 <code style="font:400 12.5px 'IBM Plex Mono',monospace;">--pos / --neg</code>만. 강한 신호색은 호재/악재 배지에만 씁니다.</p></div>
+      <div><h3 style="font-size:15px;font-weight:600;margin:0 0 8px;">제목·브리핑에 명조</h3><p style="font-size:14px;line-height:1.7;color:oklch(0.42 0.016 172);margin:0;">Gowun Batang. 데이터·라벨·차트는 IBM Plex Sans KR로 통일하고 숫자는 tabular-nums.</p></div>
+      <div><h3 style="font-size:15px;font-weight:600;margin:0 0 8px;">피드 + 사이드 레일</h3><p style="font-size:14px;line-height:1.7;color:oklch(0.42 0.016 172);margin:0;">≥1024px 2열. ≤1023px에서는 레일이 <strong style="font-weight:600;">피드 아래</strong>로 내려가고, 상단에는 44px 신호 요약 칩만 남습니다.</p></div>
+      <div><h3 style="font-size:15px;font-weight:600;margin:0 0 8px;">전부 무료 · 결제 없음</h3><p style="font-size:14px;line-height:1.7;color:oklch(0.42 0.016 172);margin:0;">프리미엄·구독·결제 UI 없음. 적중률과 추정가도 전원 공개. 수익 요소는 “커피 한 잔” 후원 탭 하나이며 후원 특전은 만들지 않습니다.</p></div>
+    </div>
+  </section>
+
+  <!-- ── 08 최종 정보 구조 ── -->
+  <section style="max-width:1120px;margin:0 auto;padding:80px 32px 0;">
+    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:32px;">
+      <span style="font:500 12px/1 'IBM Plex Mono',monospace;color:oklch(0.58 0.06 165);">08</span>
+      <h2 style="font-family:'Gowun Batang',serif;font-size:clamp(22px,2.4vw,30px);line-height:1.3;margin:0;font-weight:700;">최종 정보 구조</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:28px 40px;">
+      <div>
+        <div style="font:500 11px/1 'IBM Plex Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:oklch(0.48 0.09 165);margin-bottom:12px;">① 브리핑</div>
+        <div style="font-size:13.5px;line-height:2;color:oklch(0.42 0.016 172);">· 검색 자동완성 + 칩(드래그 재정렬)<br>· 시장 지수 띠 (접기 가능)<br>· 신호 필터 (긍정/주의/관망)<br>· 오늘의 한 문단 (톤 3단)<br>· 종목별 브리핑 블록 → 펼침<br>&nbsp;&nbsp;판단 근거 4축 · 적중률<br>&nbsp;&nbsp;뉴스 / 공시 / 컨센서스 / 차트 / 수급<br>· 종목 상세 (단일 라우트)</div>
+      </div>
+      <div>
+        <div style="font:500 11px/1 'IBM Plex Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:oklch(0.48 0.09 165);margin-bottom:12px;">② 개장 전 추정가</div>
+        <div style="font-size:13.5px;line-height:2;color:oklch(0.42 0.016 172);">· 대상 선택 — 지수 전체(EWY) / 종목별<br>· 괴리 스트립 (상단, 항상 노출)<br>· 실제가 실선 / 추정가 파선 차트<br>· 시간대 7종 (1분~월)<br>· 구간별 괴리 추이 24구간<br>· 관심종목별 지수 대표성 목록</div>
+      </div>
+      <div>
+        <div style="font:500 11px/1 'IBM Plex Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:oklch(0.48 0.09 165);margin-bottom:12px;">③ 커피 한 잔</div>
+        <div style="font-size:13.5px;line-height:2;color:oklch(0.42 0.016 172);">· 프리셋 1,000 / 2,500원 / 자유 금액<br>· 토스 · 카카오페이 송금 링크<br>· 특전 없음 명시<br>· 죄책감 유도 문구 금지</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 09 추정가·괴리 표기 규칙 ── -->
+  <section style="max-width:1120px;margin:0 auto;padding:80px 32px 0;">
+    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
+      <span style="font:500 12px/1 'IBM Plex Mono',monospace;color:oklch(0.58 0.06 165);">09</span>
+      <h2 style="font-family:'Gowun Batang',serif;font-size:clamp(22px,2.4vw,30px);line-height:1.3;margin:0;font-weight:700;">추정가 · 괴리 표기 규칙</h2>
+    </div>
+    <p style="font-size:15px;line-height:1.7;margin:0 0 32px;color:oklch(0.42 0.016 172);max-width:60ch;">추정가는 지수 프록시라 신뢰 한계를 UI가 먼저 말해야 합니다. 네 가지를 항상 함께 노출합니다.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:24px;">
+      <span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:4px;border:1px solid oklch(0.48 0.09 165);color:oklch(0.42 0.09 165);font-size:13px;font-weight:500;">참고용 추정가</span>
+      <span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:4px;background:oklch(0.26 0.014 172 / .07);color:oklch(0.42 0.016 172);font-size:13px;font-weight:500;">괴리 정보</span>
+      <span style="display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 12px;border-radius:4px;background:oklch(0.62 0.12 75 / .14);color:oklch(0.44 0.10 60);font-size:13px;font-weight:500;"><span style="font-size:11px;">◈</span>정확도 낮음</span>
+      <span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:4px;border:1px solid oklch(0.26 0.014 172 / .22);color:oklch(0.42 0.016 172);font-size:13px;">환율 보정 반영</span>
+    </div>
+    <div style="font-size:14.5px;line-height:1.9;color:oklch(0.42 0.016 172);max-width:64ch;">
+      · 라인 구분은 색 + <strong style="font-weight:600;">선 스타일</strong> — 실제가 실선 / 추정가 파선<br>
+      · 괴리 확대 강조는 색이 아니라 <strong style="font-weight:600;">테두리 2px + 숫자 굵기</strong><br>
+      · 괴리는 매수·매도 신호가 아니라는 문구를 스트립 바로 아래 고정<br>
+      · 갱신 시각을 분 단위로 노출 — “근접 실시간(약 15분 지연)”, “완전 실시간” 표현 금지<br>
+      · 중소형주는 위젯 비노출 또는 ◈ 정확도 낮음
+    </div>
+  </section>
+
+  <!-- ── 10 구현 메모 ── -->
+  <section style="max-width:1120px;margin:0 auto;padding:80px 32px 0;">
+    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:32px;">
+      <span style="font:500 12px/1 'IBM Plex Mono',monospace;color:oklch(0.58 0.06 165);">10</span>
+      <h2 style="font-family:'Gowun Batang',serif;font-size:clamp(22px,2.4vw,30px);line-height:1.3;margin:0;font-weight:700;">구현 메모</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:32px 40px;">
+      <div>
+        <h3 style="font-size:15px;font-weight:600;margin:0 0 8px;">차트 — TradingView Lightweight Charts</h3>
+        <p style="font-size:14px;line-height:1.7;color:oklch(0.42 0.016 172);margin:0 0 8px;">Vue 앱에서는 <code style="font:400 12.5px 'IBM Plex Mono',monospace;">tradingview-proxy-chart.js</code>의 <code style="font:400 12.5px 'IBM Plex Mono',monospace;">createProxyChart()</code>를 그대로 사용합니다. 함정 두 가지:</p>
+        <div style="font-size:14px;line-height:1.8;color:oklch(0.42 0.016 172);">· 시리즈·축 색상에 <code style="font:400 12.5px 'IBM Plex Mono',monospace;">oklch()</code>를 넘기면 파싱 실패로 선이 그려지지 않습니다 → 차트에 넘길 값만 rgb()<br>· 컨테이너 높이와 chart 높이를 일치시키고 ResizeObserver에서 <code style="font:400 12.5px 'IBM Plex Mono',monospace;">resize()</code> 호출<br>· 시안 파일은 미리보기 환경 제약으로 동일 데이터의 SVG 차트를 씁니다</div>
+      </div>
+      <div>
+        <h3 style="font-size:15px;font-weight:600;margin:0 0 8px;">모바일 · PWA</h3>
+        <div style="font-size:14px;line-height:1.8;color:oklch(0.42 0.016 172);">· 세이프에어리어 상단 56px / 하단 32px<br>· 하단 3탭: 브리핑 · 추정가 · 커피 한 잔<br>· “홈 화면에 추가” 안내는 1회 노출 + “지금은 넘어가기”<br>· 오프라인은 마지막 브리핑 화면만 캐시<br>· 모든 터치 타깃 44px 이상</div>
+      </div>
+      <div>
+        <h3 style="font-size:15px;font-weight:600;margin:0 0 8px;">파일</h3>
+        <div style="font:400 13px/1.9 'IBM Plex Mono',monospace;color:oklch(0.42 0.016 172);">Stock Briefing Dashboard.dc.html<br>Mobile Screens.dc.html — 8화면<br>tradingview-proxy-chart.js<br>Stock Briefing - Design Spec.dc.html</div>
+      </div>
+    </div>
+    <p style="font-size:13px;line-height:1.8;color:oklch(0.50 0.016 172);margin:40px 0 0;max-width:60ch;border-top:1px solid oklch(0.26 0.014 172 / .12);padding-top:16px;">남은 항목: 알림 설정 화면, 오프라인 배너, 종목 상세의 수급 차트 시각화, 증권사 제휴(CPA) 진입점 위치 결정.</p>
+  </section>
+</div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      lightTokens: [
+        { n: "--bg",        v: "oklch(0.973 0.009 165)", d: "본문 배경 · 틴티드 뉴트럴" },
+        { n: "--surface",   v: "oklch(0.996 0.004 165)", d: "펼친 상세 내부 표면" },
+        { n: "--sunken",    v: "oklch(0.945 0.013 165)", d: "입력·스켈레톤 바닥" },
+        { n: "--ink",       v: "oklch(0.25 0.015 172)",  d: "본문 · 대비 12.9:1" },
+        { n: "--ink2",      v: "oklch(0.44 0.017 172)",  d: "보조 설명 · 7.1:1" },
+        { n: "--ink3",      v: "oklch(0.565 0.014 172)", d: "메타·시각 · 4.6:1" },
+        { n: "--rule",      v: "oklch(0.25 0.015 172)",  d: "규칙선 (alpha .13 / soft .08)" },
+        { n: "--brand",     v: "oklch(0.355 0.062 165)", d: "액션 · 딥그린" },
+        { n: "--brand-soft",v: "oklch(0.465 0.078 165)", d: "링크·라벨·강조" },
+        { n: "--up",        v: "oklch(0.44 0.095 158)",  d: "호재 ◆ (신호 전용)" },
+        { n: "--down",      v: "oklch(0.47 0.135 26)",   d: "악재 ▽ (신호 전용)" },
+        { n: "--watch",     v: "oklch(0.50 0.105 68)",   d: "확인 필요 ◈" },
+        { n: "--pos",       v: "oklch(0.47 0.070 26)",   d: "가격 상승 ▲ · 저채도 틴트" },
+        { n: "--neg",       v: "oklch(0.46 0.055 250)",  d: "가격 하락 ▼ · 저채도 틴트" }
+      ],
+      darkTokens: [
+        { n: "--bg",        v: "oklch(0.207 0.013 168)", d: "Nocturne · 짙은 회녹, 블랙 아님" },
+        { n: "--surface",   v: "oklch(0.256 0.015 168)", d: "표면은 배경보다 밝게" },
+        { n: "--sunken",    v: "oklch(0.183 0.012 168)", d: "입력·지수 띠 바닥" },
+        { n: "--ink",       v: "oklch(0.928 0.009 168)", d: "순백 아님 · 눈부심 방지" },
+        { n: "--ink2",      v: "oklch(0.762 0.013 168)", d: "보조 설명" },
+        { n: "--ink3",      v: "oklch(0.625 0.013 168)", d: "메타·시각" },
+        { n: "--rule",      v: "oklch(0.98 0.010 168)",  d: "규칙선 (alpha .15 / soft .09)" },
+        { n: "--brand",     v: "oklch(0.735 0.080 165)", d: "채도 낮추고 명도 올림" },
+        { n: "--brand-soft",v: "oklch(0.805 0.058 165)", d: "링크·라벨" },
+        { n: "--up",        v: "oklch(0.775 0.085 158)", d: "호재 ◆" },
+        { n: "--down",      v: "oklch(0.755 0.105 28)",  d: "악재 ▽" },
+        { n: "--watch",     v: "oklch(0.80 0.090 72)",   d: "확인 필요 ◈" },
+        { n: "--pos",       v: "oklch(0.775 0.075 28)",  d: "가격 상승 ▲" },
+        { n: "--neg",       v: "oklch(0.775 0.055 250)", d: "가격 하락 ▼" }
+      ],
+      typeScale: [
+        { n: "display", v: "clamp(32px, 4.4vw, 54px) / 1.16" },
+        { n: "h1",      v: "clamp(24px, 3.0vw, 34px) / 1.24" },
+        { n: "h2",      v: "clamp(20px, 2.2vw, 26px) / 1.30" },
+        { n: "brief",   v: "clamp(18px, 1.9vw, 22px) / 1.45  명조" },
+        { n: "body",    v: "clamp(15px, 1.1vw, 17px) / 1.70" },
+        { n: "data",    v: "clamp(14px, 1.0vw, 16px) / 1.40  mono" },
+        { n: "meta",    v: "13px / 1.55" },
+        { n: "micro",   v: "11.5px / 1.40  uppercase mono" }
+      ],
+      spacing: [
+        { n: "s-1", px: "4px" },  { n: "s-2", px: "8px" },
+        { n: "s-3", px: "12px" }, { n: "s-4", px: "16px" },
+        { n: "s-6", px: "24px" }, { n: "s-8", px: "32px" },
+        { n: "s-12", px: "48px" },{ n: "s-16", px: "64px" }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

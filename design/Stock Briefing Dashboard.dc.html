@@ -1,0 +1,1382 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500;600&family=Gowun+Batang:wght@400;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:oklch(0.973 0.009 165); --surface:oklch(0.996 0.004 165); --sunken:oklch(0.945 0.013 165);
+    --ink:oklch(0.25 0.015 172); --ink2:oklch(0.44 0.017 172); --ink3:oklch(0.565 0.014 172);
+    --rule:oklch(0.25 0.015 172 / .13); --rule-soft:oklch(0.25 0.015 172 / .08); --tint:oklch(0.25 0.015 172 / .045);
+    --brand:oklch(0.355 0.062 165); --brand-soft:oklch(0.465 0.078 165); --brand-ink:oklch(0.975 0.012 165);
+    --up:oklch(0.44 0.095 158); --up-bg:oklch(0.44 0.095 158 / .12);
+    --down:oklch(0.47 0.135 26); --down-bg:oklch(0.47 0.135 26 / .11);
+    --watch:oklch(0.50 0.105 68); --watch-bg:oklch(0.50 0.105 68 / .13);
+    --pos:oklch(0.47 0.070 26); --neg:oklch(0.46 0.055 250);
+  }
+  [data-theme="dark"]{
+    --bg:oklch(0.207 0.013 168); --surface:oklch(0.256 0.015 168); --sunken:oklch(0.183 0.012 168);
+    --ink:oklch(0.928 0.009 168); --ink2:oklch(0.762 0.013 168); --ink3:oklch(0.625 0.013 168);
+    --rule:oklch(0.98 0.01 168 / .15); --rule-soft:oklch(0.98 0.01 168 / .09); --tint:oklch(0.98 0.01 168 / .05);
+    --brand:oklch(0.735 0.080 165); --brand-soft:oklch(0.805 0.058 165); --brand-ink:oklch(0.19 0.02 165);
+    --up:oklch(0.775 0.085 158); --up-bg:oklch(0.775 0.085 158 / .14);
+    --down:oklch(0.755 0.105 28); --down-bg:oklch(0.755 0.105 28 / .13);
+    --watch:oklch(0.80 0.090 72); --watch-bg:oklch(0.80 0.090 72 / .14);
+    --pos:oklch(0.775 0.075 28); --neg:oklch(0.775 0.055 250);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans KR',system-ui,sans-serif;-webkit-font-smoothing:antialiased;word-break:keep-all;text-wrap:pretty;transition:background 240ms ease;}
+  a{color:var(--brand-soft);text-decoration:none;}
+  a:hover{color:var(--brand);}
+  button,input{font:inherit;color:inherit;}
+  :focus-visible{outline:2px solid var(--brand-soft);outline-offset:2px;border-radius:3px;}
+  @keyframes pulse{0%,100%{opacity:.5}50%{opacity:.95}}
+  @keyframes flash{0%{opacity:.35}100%{opacity:1}}
+  @media (prefers-reduced-motion:reduce){*{animation-duration:0.01ms !important;transition-duration:0.01ms !important;}}
+  @media (max-width:1023px){
+    [data-layout="body"]{grid-template-columns:minmax(0,1fr) !important;gap:0 !important;}
+    [data-layout="rail"]{position:static !important;order:1 !important;padding-top:32px !important;border-top:1px solid var(--rule);margin-top:40px;}
+    [data-layout="msummary"]{display:flex !important;}
+    [data-layout="pwa"]{display:block !important;}
+  }
+  @media (max-width:640px){
+    [data-layout="body"]{padding:0 16px 72px !important;}
+    [data-layout="head"]{padding:12px 16px 10px !important;}
+    [data-layout="detail"]{padding:20px 16px !important;}
+    [data-layout="rail"]{padding-top:24px !important;}
+    [data-layout="indexbar"]{padding:0 16px !important;gap:12px !important;}
+  }
+</style>
+</helmet>
+
+<div data-theme="{{ theme }}" style="min-height:100vh;background:var(--bg);color:var(--ink);">
+
+  <!-- ══ HEADER ══ -->
+  <header style="position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--rule);">
+    <div data-layout="head" style="max-width:1240px;margin:0 auto;padding:16px 24px 12px;">
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:16px;flex:none;">
+          <span style="font-family:'Gowun Batang',serif;font-weight:700;font-size:19px;letter-spacing:-0.01em;">브리핑</span>
+          <nav style="display:flex;gap:2px;">
+            <sc-for list="{{ nav }}" as="v" hint-placeholder-count="2">
+              <button onClick="{{ v.onPick }}" aria-current="{{ v.active }}" style="height:44px;padding:0 12px;border:0;border-radius:6px;background:{{ v.bg }};color:{{ v.color }};font-size:13.5px;font-weight:{{ v.weight }};cursor:pointer;white-space:nowrap;transition:background 140ms ease;" style-hover="background:var(--tint);">{{ v.label }}</button>
+            </sc-for>
+          </nav>
+        </div>
+
+        <div style="position:relative;flex:1 1 280px;min-width:220px;">
+          <input value="{{ query }}" onChange="{{ onQuery }}" onKeyDown="{{ onQueryKey }}" placeholder="종목명 또는 티커로 검색 — 삼성전자, 005930" aria-label="종목 검색" style="width:100%;height:44px;padding:0 14px;border-radius:6px;border:1px solid var(--rule);background:var(--surface);font-size:14.5px;transition:border-color 160ms ease;" style-focus="border-color:var(--brand-soft);outline:none;" />
+          <sc-if value="{{ hasSuggestions }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;top:52px;left:0;right:0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:4px;box-shadow:0 8px 24px oklch(0.2 0.02 170 / .10);">
+              <sc-for list="{{ suggestions }}" as="s" hint-placeholder-count="3">
+                <button onClick="{{ s.onPick }}" disabled="{{ s.added }}" style="width:100%;height:48px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 12px;background:transparent;border:0;border-radius:4px;cursor:pointer;text-align:left;transition:background 140ms ease;" style-hover="background:var(--tint);">
+                  <span style="font-size:14.5px;color:{{ s.nameColor }};">{{ s.name }}</span>
+                  <span style="display:flex;align-items:center;gap:10px;">
+                    <span style="font:400 12px 'IBM Plex Mono',monospace;color:var(--ink3);">{{ s.ticker }}</span>
+                    <span style="font-size:11.5px;color:var(--ink3);">{{ s.hint }}</span>
+                  </span>
+                </button>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+
+        <button onClick="{{ onToggleTheme }}" aria-label="화면 밝기 전환" style="height:44px;min-width:44px;padding:0 14px;display:flex;align-items:center;gap:8px;background:transparent;border:1px solid var(--rule);border-radius:6px;cursor:pointer;font-size:13px;color:var(--ink2);transition:background 140ms ease,border-color 140ms ease;" style-hover="background:var(--tint);border-color:var(--ink3);">
+          <span style="font-size:13px;">◐</span><span>{{ themeLabel }}</span>
+        </button>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center;">
+        <sc-for list="{{ chips }}" as="c" hint-placeholder-count="4">
+          <span draggable="{{ true }}" onDragStart="{{ c.onDragStart }}" onDragOver="{{ c.onDragOver }}" onDrop="{{ c.onDrop }}" onDragEnd="{{ c.onDragEnd }}" style="height:36px;padding:0 6px 0 10px;display:inline-flex;align-items:center;gap:6px;border-radius:18px;background:var(--tint);font-size:13px;cursor:grab;opacity:{{ c.opacity }};transition:opacity 140ms ease;">
+            <span style="font-size:10px;color:var(--ink3);letter-spacing:-1px;">⠿</span>
+            <span>{{ c.name }}</span>
+            <button onClick="{{ c.onRemove }}" aria-label="관심종목에서 빼기" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;background:transparent;border:0;border-radius:12px;cursor:pointer;color:var(--ink3);font-size:14px;line-height:1;transition:background 140ms ease,color 140ms ease;" style-hover="background:var(--down-bg);color:var(--down);">×</button>
+          </span>
+        </sc-for>
+        <sc-if value="{{ hasChips }}" hint-placeholder-val="{{ true }}">
+          <span style="font-size:12px;color:var(--ink3);margin-left:4px;">{{ chipMeta }} · 드래그로 순서 변경</span>
+        </sc-if>
+      </div>
+    </div>
+
+    <!-- 지수 띠 -->
+    <div style="border-top:1px solid var(--rule-soft);background:var(--sunken);">
+      <div data-layout="indexbar" style="max-width:1240px;margin:0 auto;padding:0 24px;display:flex;align-items:center;gap:20px;min-height:44px;">
+        <span style="font-size:12px;color:var(--ink3);flex:none;white-space:nowrap;">시장 지수</span>
+        <sc-if value="{{ indexOpen }}" hint-placeholder-val="{{ true }}">
+          <div style="flex:1;min-width:0;display:flex;align-items:center;gap:20px;overflow-x:auto;padding:8px 0;scrollbar-width:none;">
+            <sc-for list="{{ indices }}" as="ix" hint-placeholder-count="6">
+              <span style="display:inline-flex;align-items:baseline;gap:8px;white-space:nowrap;flex:none;">
+                <span style="font-size:12.5px;color:var(--ink2);">{{ ix.name }}</span>
+                <span style="font:500 13px 'IBM Plex Mono',monospace;color:var(--ink);">{{ ix.value }}</span>
+                <span style="font:400 11.5px 'IBM Plex Mono',monospace;color:{{ ix.color }};">{{ ix.move }}</span>
+              </span>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ indexClosed }}" hint-placeholder-val="{{ false }}">
+          <span style="flex:1;font-size:12px;color:var(--ink3);">코스피 3,184.62 · 나스닥 26,584.06</span>
+        </sc-if>
+        <button onClick="{{ onToggleIndex }}" aria-label="{{ indexToggleLabel }}" style="width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;background:transparent;border:0;cursor:pointer;color:var(--ink3);transition:color 140ms ease;" style-hover="color:var(--ink)">
+          <span style="font-size:13px;display:inline-block;transform:{{ indexCaret }};transition:transform 200ms cubic-bezier(.32,.72,0,1);">⌄</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══ BODY ══ -->
+  <!-- ══ 커피 한 잔 (후원) ══ -->
+  <sc-if value="{{ showSupport }}" hint-placeholder-val="{{ false }}">
+    <div data-layout="body" style="max-width:720px;margin:0 auto;padding:48px 24px 96px;display:block;">
+      <h1 style="font-family:'Gowun Batang',serif;font-weight:700;font-size:clamp(24px,3vw,32px);line-height:1.35;margin:0 0 12px;">쓰다가 마음에 들면,<br>커피 한 잔 정도만</h1>
+      <p style="font-size:15px;line-height:1.75;color:var(--ink2);margin:0 0 8px;max-width:52ch;">이 대시보드는 혼자 만들고 있습니다. 후원은 순수하게 응원이고, 안 하셔도 기능은 하나도 안 잠깁니다.</p>
+      <p style="font-size:13.5px;line-height:1.75;color:var(--ink3);margin:0 0 32px;max-width:52ch;">후원자 전용 기능이나 특전은 없습니다. 모든 기능은 누구에게나 똑같이 열려 있습니다.</p>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:24px;">
+        <sc-for list="{{ supportPresets }}" as="p" hint-placeholder-count="3">
+          <button onClick="{{ p.onPick }}" aria-pressed="{{ p.selected }}" style="min-height:96px;padding:16px;border:1px solid {{ p.border }};background:{{ p.bg }};border-radius:8px;cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:6px;transition:background 140ms ease,border-color 140ms ease;" style-hover="background:var(--tint);">
+            <span style="font-size:14.5px;color:var(--ink);">{{ p.label }}</span>
+            <span style="font:500 18px/1.2 'IBM Plex Sans KR',sans-serif;font-variant-numeric:tabular-nums;">{{ p.amount }}</span>
+            <span style="font-size:11.5px;color:var(--ink3);">{{ p.note }}</span>
+          </button>
+        </sc-for>
+      </div>
+
+      <sc-if value="{{ supportFree }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-bottom:24px;">
+          <label style="display:block;font-size:13px;color:var(--ink2);margin-bottom:8px;">보내실 금액</label>
+          <div style="display:flex;align-items:center;gap:8px;max-width:280px;">
+            <input value="{{ supportCustom }}" onChange="{{ onSupportCustom }}" inputMode="numeric" placeholder="4,500" aria-label="후원 금액" style="flex:1;height:44px;padding:0 12px;border-radius:6px;border:1px solid var(--rule);background:var(--surface);font:500 15px 'IBM Plex Sans KR',sans-serif;font-variant-numeric:tabular-nums;" style-focus="border-color:var(--brand-soft);outline:none;" />
+            <span style="font-size:14px;color:var(--ink2);">원</span>
+          </div>
+        </div>
+      </sc-if>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+        <a href="#" style="height:48px;padding:0 20px;display:inline-flex;align-items:center;gap:10px;border-radius:6px;background:var(--brand);color:var(--brand-ink);font-size:14px;font-weight:500;">
+          <span style="width:18px;height:18px;border-radius:4px;background:var(--brand-ink);opacity:.25;display:inline-block;"></span>
+          토스로 {{ supportSendLabel }}
+        </a>
+        <a href="#" style="height:48px;padding:0 20px;display:inline-flex;align-items:center;gap:10px;border-radius:6px;border:1px solid var(--rule);color:var(--ink);font-size:14px;">
+          <span style="width:18px;height:18px;border-radius:4px;background:var(--ink3);opacity:.4;display:inline-block;"></span>
+          카카오페이로 보내기
+        </a>
+      </div>
+      <p style="font-size:12.5px;line-height:1.7;color:var(--ink3);margin:0 0 48px;">송금 앱으로 이동합니다. 카드 정보를 저장하지 않고, 후원 내역은 계정과 연결되지 않습니다.</p>
+
+      <button onClick="{{ onBackToFeed }}" style="margin-top:32px;height:44px;padding:0 16px;border-radius:6px;border:1px solid var(--rule);background:transparent;color:var(--ink2);font-size:13.5px;cursor:pointer;transition:background 140ms ease;" style-hover="background:var(--tint);">브리핑으로 돌아가기</button>
+    </div>
+  </sc-if>
+
+  <!-- ══ 개장 전 추정가 (전용 메뉴) ══ -->
+  <sc-if value="{{ showProxyView }}" hint-placeholder-val="{{ false }}">
+    <div data-layout="body" style="max-width:1000px;margin:0 auto;padding:40px 24px 96px;display:block;">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+        <span style="font:500 11px/1 'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--brand-soft);">EWY PROXY</span>
+        <span style="height:20px;padding:0 7px;display:inline-flex;align-items:center;border-radius:3px;border:1px solid var(--brand-soft);color:var(--brand-soft);font-size:10.5px;font-weight:500;">참고용 추정가</span>
+        <span style="font-size:12px;color:var(--ink3);font-variant-numeric:tabular-nums;">09:53 갱신 · 약 1분 주기</span>
+      </div>
+      <h1 style="font-family:'Gowun Batang',serif;font-weight:700;font-size:clamp(24px,3vw,34px);line-height:1.3;margin:0 0 12px;">개장하면 대략 이 정도입니다</h1>
+      <p style="font-size:15px;line-height:1.75;color:var(--ink2);margin:0 0 32px;max-width:60ch;">국내 장이 닫힌 사이 미국 시장에서 거래되는 한국 지수 ETF(EWY)를 프록시로 삼아 방향을 추정합니다. 대형주 비중이 높은 지수 기반이라, 개별 종목 특히 중소형주와는 어긋날 수 있습니다.</p>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;">
+        <sc-for list="{{ proxyTargets }}" as="p" hint-placeholder-count="4">
+          <button onClick="{{ p.onPick }}" style="height:40px;padding:0 14px;display:inline-flex;align-items:center;gap:8px;border:1px solid {{ p.border }};border-radius:20px;background:{{ p.bg }};color:{{ p.color }};font-size:13px;font-weight:{{ p.weight }};cursor:pointer;transition:background 140ms ease;" style-hover="background:var(--tint);">
+            {{ p.label }}
+            <sc-if value="{{ p.low }}" hint-placeholder-val="{{ false }}">
+              <span style="font-size:10px;color:var(--watch);">◈</span>
+            </sc-if>
+          </button>
+        </sc-for>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px;padding:8px 12px;border:{{ gap.emphBorder }};border-radius:6px;width:fit-content;">
+        <span style="height:20px;padding:0 7px;display:inline-flex;align-items:center;border-radius:3px;background:var(--tint);color:var(--ink2);font-size:10.5px;font-weight:500;">괴리 정보</span>
+        <span style="font-size:13px;color:var(--ink2);">추정가 − 실제가</span>
+        <span style="font:14px 'IBM Plex Sans KR',sans-serif;font-variant-numeric:tabular-nums;font-weight:{{ gap.emphWeight }};">{{ gap.now }}</span>
+        <span style="font-size:11px;color:var(--ink3);border-left:1px solid var(--rule-soft);padding-left:10px;">{{ gap.fxLabel }}</span>
+        <span style="font-size:11px;color:var(--ink3);">{{ gap.state }}</span>
+      </div>
+      <p style="font-size:12px;line-height:1.7;color:var(--ink3);margin:-8px 0 20px;max-width:52ch;">괴리는 매수·매도 신호가 아니라 두 가격의 차이를 보여주는 참고 지표입니다. 호재·악재 신호와는 무관합니다.</p>
+
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
+        <div style="display:flex;gap:2px;flex-wrap:wrap;">
+          <sc-for list="{{ proxyTfs }}" as="tf" hint-placeholder-count="7">
+            <button onClick="{{ tf.onPick }}" style="height:36px;min-width:44px;padding:0 10px;border:0;border-radius:4px;background:{{ tf.bg }};color:{{ tf.color }};font-size:12.5px;font-weight:{{ tf.weight }};cursor:pointer;transition:background 140ms ease;" style-hover="background:var(--tint);">{{ tf.label }}</button>
+          </sc-for>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <span style="display:inline-flex;align-items:center;gap:8px;height:28px;padding:0 10px;border-radius:4px;background:oklch(0.84 0.095 168 / .16);font-size:12.5px;">
+            <span style="width:14px;height:2px;background:oklch(0.84 0.095 168);display:inline-block;"></span>
+            <span style="color:var(--ink2);">토스증권 실제가</span>
+            <span style="font-weight:500;font-variant-numeric:tabular-nums;">{{ proxyAct }}</span>
+          </span>
+          <span style="display:inline-flex;align-items:center;gap:8px;height:28px;padding:0 10px;border-radius:4px;background:oklch(0.60 0.048 165 / .18);font-size:12.5px;">
+            <span style="width:14px;height:0;border-top:2px dashed oklch(0.62 0.055 165);display:inline-block;"></span>
+            <span style="color:var(--ink2);">EWY 추정가</span>
+            <span style="font-weight:500;font-variant-numeric:tabular-nums;">{{ proxyEst }}</span>
+          </span>
+        </div>
+      </div>
+
+      <div style="position:relative;">
+        <svg viewBox="0 0 640 300" preserveAspectRatio="none" style="width:100%;height:300px;display:block;">
+          <line x1="0" y1="{{ proxyChart.gridA }}" x2="640" y2="{{ proxyChart.gridA }}" stroke="var(--rule-soft)" stroke-width="1"></line>
+          <line x1="0" y1="{{ proxyChart.gridB }}" x2="640" y2="{{ proxyChart.gridB }}" stroke="var(--rule-soft)" stroke-width="1"></line>
+          <line x1="0" y1="{{ proxyChart.gridC }}" x2="640" y2="{{ proxyChart.gridC }}" stroke="var(--rule-soft)" stroke-width="1"></line>
+          <path d="{{ proxyChart.area }}" fill="oklch(0.60 0.048 165 / .10)"></path>
+          <path d="{{ proxyChart.estLine }}" fill="none" stroke="oklch(0.62 0.055 165)" stroke-width="2" stroke-dasharray="6 5" vector-effect="non-scaling-stroke"></path>
+          <path d="{{ proxyChart.actLine }}" fill="none" stroke="oklch(0.84 0.095 168)" stroke-width="2" vector-effect="non-scaling-stroke"></path>
+          <circle cx="{{ proxyChart.dotX }}" cy="{{ proxyChart.dotY }}" r="3.5" fill="oklch(0.84 0.095 168)"></circle>
+        </svg>
+        <span style="position:absolute;top:0;right:0;font-size:11px;color:var(--ink3);font-variant-numeric:tabular-nums;">{{ proxyChart.hi }}</span>
+        <span style="position:absolute;top:50%;right:0;transform:translateY(-50%);font-size:11px;color:var(--ink3);font-variant-numeric:tabular-nums;">{{ proxyChart.mid }}</span>
+        <span style="position:absolute;bottom:0;right:0;font-size:11px;color:var(--ink3);font-variant-numeric:tabular-nums;">{{ proxyChart.lo }}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--ink3);margin-top:8px;font-variant-numeric:tabular-nums;">
+        <span>{{ proxyChart.from }}</span><span>{{ proxyChart.to }}</span>
+      </div>
+
+      <!-- 실시간 괴리도 -->
+      <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--rule-soft);display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:24px 40px;align-items:start;">
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <span style="font:500 11px/1 'IBM Plex Mono',monospace;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);">실시간 괴리도</span>
+            <span style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:{{ gap.stateColor }};"><span style="font-size:10px;">{{ gap.stateIcon }}</span>{{ gap.state }}</span>
+          </div>
+          <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:8px;">
+            <span style="font:500 28px/1 'IBM Plex Sans KR',sans-serif;font-variant-numeric:tabular-nums;color:{{ gap.nowColor }};">{{ gap.now }}</span>
+            <span style="font-size:12.5px;color:var(--ink3);font-variant-numeric:tabular-nums;">최근 평균 {{ gap.avg }}</span>
+          </div>
+          <p style="font-size:12.5px;line-height:1.7;color:var(--ink3);margin:0;max-width:44ch;">{{ gap.hint }}</p>
+        </div>
+        <div>
+          <div style="font:500 11px/1 'IBM Plex Mono',monospace;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);margin-bottom:12px;">구간별 괴리 추이</div>
+          <div style="display:flex;align-items:center;gap:3px;height:88px;border-top:1px dashed var(--rule-soft);border-bottom:1px dashed var(--rule-soft);padding:2px 0;">
+            <sc-for list="{{ gap.bars }}" as="g" hint-placeholder-count="24">
+              <span style="flex:1;height:100%;display:flex;flex-direction:column;justify-content:center;">
+                <span style="display:flex;height:44px;align-items:{{ g.align }};">
+                  <span style="width:100%;height:{{ g.h }};background:{{ g.bg }};border-radius:1px;display:block;"></span>
+                </span>
+              </span>
+            </sc-for>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--ink3);margin-top:8px;">
+            <span>추정가 &gt; 실제가</span><span style="font-variant-numeric:tabular-nums;">최근 24구간</span><span>추정가 &lt; 실제가</span>
+          </div>
+        </div>
+      </div>
+
+      <sc-if value="{{ proxySelLow }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-top:16px;padding:12px 14px;border-radius:6px;background:var(--watch-bg);display:flex;gap:10px;align-items:flex-start;">
+          <span style="font-size:11px;color:var(--watch);line-height:1.7;">◈</span>
+          <span style="font-size:13px;line-height:1.7;color:var(--ink2);">이 종목은 지수 대표성이 낮아 <strong style="font-weight:600;color:var(--watch);">정확도 낮음</strong>입니다. 방향 참고 정도로만 보세요.</span>
+        </div>
+      </sc-if>
+
+      <section style="margin-top:48px;border-top:2px solid var(--rule);padding-top:24px;">
+        <div style="font:500 11px/1 'IBM Plex Mono',monospace;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);margin-bottom:16px;">관심종목별 지수 대표성</div>
+        <sc-for list="{{ proxyRows }}" as="r" hint-placeholder-count="4">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid var(--rule-soft);">
+            <span style="display:flex;align-items:baseline;gap:8px;min-width:0;">
+              <span style="font-size:14.5px;">{{ r.name }}</span>
+              <span style="font:400 11.5px 'IBM Plex Mono',monospace;color:var(--ink3);">{{ r.ticker }}</span>
+            </span>
+            <span style="display:flex;align-items:center;gap:16px;flex:none;">
+              <span style="font-size:12.5px;color:{{ r.qColor }};">{{ r.quality }}</span>
+              <span style="font:400 13px 'IBM Plex Sans KR',sans-serif;font-variant-numeric:tabular-nums;color:{{ r.dirColor }};">{{ r.dir }}</span>
+            </span>
+          </div>
+        </sc-for>
+        <p style="font-size:12.5px;line-height:1.8;color:var(--ink3);margin:24px 0 0;max-width:56ch;">추정 방향은 지수 프록시에서 도출한 참고값이며, 개별 종목의 개장가를 보장하지 않습니다. 중소형주는 표시하지 않습니다.</p>
+      </section>
+
+      <button onClick="{{ onBackToFeed }}" style="margin-top:32px;height:44px;padding:0 16px;border-radius:6px;border:1px solid var(--rule);background:transparent;color:var(--ink2);font-size:13.5px;cursor:pointer;transition:background 140ms ease;" style-hover="background:var(--tint);">브리핑으로 돌아가기</button>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ showFeed }}" hint-placeholder-val="{{ true }}">
+  <div data-layout="body" style="max-width:1240px;margin:0 auto;padding:0 24px 96px;display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:56px;align-items:start;">
+
+    <!-- ── 피드 ── -->
+    <main style="min-width:0;">
+
+      <!-- 모바일 신호 요약 (≤1023px) -->
+      <div data-layout="msummary" style="display:none;align-items:center;gap:16px;overflow-x:auto;min-height:44px;padding:8px 0;margin-top:8px;border-bottom:1px solid var(--rule-soft);">
+        <sc-for list="{{ signalSummary }}" as="s" hint-placeholder-count="3">
+          <button onClick="{{ s.onPick }}" style="flex:none;height:36px;padding:0 12px;display:inline-flex;align-items:center;gap:8px;border:0;border-radius:18px;background:{{ s.bg }};cursor:pointer;font-size:12.5px;color:var(--ink2);white-space:nowrap;font-weight:{{ s.weight }};">
+            <span style="font-size:10px;color:{{ s.color }};">{{ s.icon }}</span>{{ s.label }}<span style="font:500 12px 'IBM Plex Mono',monospace;color:var(--ink);">{{ s.n }}</span>
+          </button>
+        </sc-for>
+      </div>
+
+      <!-- 오늘의 한 문단 -->
+      <sc-if value="{{ showBrief }}" hint-placeholder-val="{{ true }}">
+        <section style="padding:40px 0 8px;">
+          <div style="font:500 11px/1 'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--brand-soft);margin-bottom:16px;">{{ todayLabel }}</div>
+          <p style="font-family:'Gowun Batang',serif;font-size:clamp(20px,2.4vw,27px);line-height:1.5;margin:0;max-width:34ch;">{{ dailyBrief }}</p>
+          <p style="font-size:14.5px;line-height:1.75;color:var(--ink2);margin:16px 0 0;max-width:56ch;">{{ dailySub }}</p>
+        </section>
+      </sc-if>
+
+      <!-- 빈 상태 A -->
+      <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+        <section style="padding:56px 0 0;">
+          <div style="width:44px;height:44px;border-radius:22px;border:1px dashed var(--rule);display:flex;align-items:center;justify-content:center;color:var(--ink3);margin-bottom:24px;">◇</div>
+          <h2 style="font-family:'Gowun Batang',serif;font-weight:700;font-size:clamp(22px,2.6vw,30px);line-height:1.4;margin:0 0 12px;">아직 지켜볼 종목이 없습니다</h2>
+          <p style="font-size:15px;line-height:1.75;color:var(--ink2);margin:0 0 24px;max-width:44ch;">한 종목만 등록해도 오늘의 뉴스·공시·컨센서스·수급을 한 문단으로 정리해 드립니다. 계정은 필요 없고, 목록은 이 브라우저에만 저장됩니다.</p>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            <sc-for list="{{ seedChips }}" as="s" hint-placeholder-count="4">
+              <button onClick="{{ s.onPick }}" style="height:40px;padding:0 14px;display:inline-flex;align-items:center;gap:6px;border-radius:20px;border:1px solid var(--brand-soft);background:transparent;color:var(--brand-soft);font-size:13.5px;cursor:pointer;transition:background 140ms ease;" style-hover="background:var(--up-bg);">
+                <span style="font-size:12px;">+</span>{{ s.name }}
+              </button>
+            </sc-for>
+          </div>
+          <p style="font-size:12.5px;color:var(--ink3);margin:24px 0 0;">예시로 채워보기 · 언제든 칩의 ×로 지울 수 있습니다</p>
+        </section>
+      </sc-if>
+
+      <!-- 로딩 스켈레톤 -->
+      <sc-if value="{{ loading }}" hint-placeholder-val="{{ false }}">
+        <section style="padding:32px 0 0;">
+          <sc-for list="{{ skeletons }}" as="k" hint-placeholder-count="2">
+            <div style="border-top:2px solid var(--rule);padding:20px 0 40px;animation:pulse 1.6s ease-in-out infinite;">
+              <div style="display:flex;justify-content:space-between;gap:16px;margin-bottom:16px;">
+                <div style="height:18px;width:120px;border-radius:3px;background:var(--sunken);"></div>
+                <div style="height:18px;width:92px;border-radius:3px;background:var(--sunken);"></div>
+              </div>
+              <div style="height:22px;width:26%;border-radius:3px;background:var(--sunken);margin-bottom:16px;"></div>
+              <div style="height:12px;width:88%;border-radius:3px;background:var(--sunken);margin-bottom:8px;"></div>
+              <div style="height:12px;width:52%;border-radius:3px;background:var(--sunken);"></div>
+            </div>
+          </sc-for>
+          <p style="font-size:13px;color:var(--ink3);margin:0;">{{ loadingNote }}</p>
+        </section>
+      </sc-if>
+
+      <!-- 필터 표시 -->
+      <sc-if value="{{ filterOn }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-top:32px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:12px 14px;border-radius:6px;background:var(--tint);">
+          <span style="font-size:13.5px;color:var(--ink2);">{{ filterNote }}</span>
+          <button onClick="{{ onClearFilter }}" style="height:36px;padding:0 12px;border-radius:4px;border:0;background:transparent;color:var(--brand-soft);font-size:13px;cursor:pointer;">전체 종목 다시 보기</button>
+        </div>
+      </sc-if>
+
+      <!-- 필터 결과 없음 -->
+      <sc-if value="{{ noMatch }}" hint-placeholder-val="{{ false }}">
+        <section style="margin-top:40px;border-top:2px solid var(--rule);padding-top:32px;">
+          <div style="width:44px;height:44px;border-radius:22px;border:1px dashed var(--rule);display:flex;align-items:center;justify-content:center;color:var(--ink3);margin-bottom:20px;">◇</div>
+          <h2 style="font-family:'Gowun Batang',serif;font-weight:700;font-size:clamp(19px,2.2vw,24px);line-height:1.45;margin:0 0 12px;">{{ noMatchTitle }}</h2>
+          <p style="font-size:14.5px;line-height:1.75;color:var(--ink2);margin:0 0 20px;max-width:44ch;">지금 등록된 종목 중에는 해당하는 신호가 없습니다. 신호는 장중에도 바뀔 수 있어요.</p>
+          <button onClick="{{ onClearFilter }}" style="height:44px;padding:0 16px;border-radius:6px;border:1px solid var(--rule);background:transparent;color:var(--ink2);font-size:13.5px;cursor:pointer;transition:background 140ms ease;" style-hover="background:var(--tint);">전체 종목 다시 보기</button>
+        </section>
+      </sc-if>
+
+      <!-- 브리핑 블록 -->
+      <sc-for list="{{ blocks }}" as="b" hint-placeholder-count="3">
+        <section style="border-top:2px solid var(--rule);margin-top:40px;padding-top:20px;">
+
+          <!-- 블록 헤더 -->
+          <div style="display:flex;justify-content:space-between;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+            <div style="min-width:0;flex:1 1 260px;">
+              <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+                <h2 style="font-size:19px;font-weight:600;line-height:1.3;margin:0;">
+                  <button onClick="{{ b.onOpenDetail }}" style="background:transparent;border:0;padding:0;margin:0;font:inherit;color:inherit;cursor:pointer;border-bottom:1px solid transparent;transition:border-color 140ms ease;" style-hover="border-bottom-color:var(--brand-soft);">{{ b.name }}</button>
+                </h2>
+                <span style="font:400 12px 'IBM Plex Mono',monospace;color:var(--ink3);">{{ b.ticker }}</span>
+                <span style="font-size:12px;color:var(--ink3);">{{ b.sector }}</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;height:28px;padding:0 10px;border-radius:4px;background:{{ b.verdictBg }};color:{{ b.verdictColor }};font-size:12.5px;font-weight:500;width:fit-content;">
+                <span style="font-size:11px;">{{ b.verdictIcon }}</span>{{ b.verdictLabel }}
+              </div>
+            </div>
+            <div style="text-align:right;flex:none;">
+              <sc-if value="{{ b.hasQuote }}" hint-placeholder-val="{{ true }}">
+                <div>
+                  <div style="font:500 20px/1.2 'IBM Plex Mono',monospace;">{{ b.price }}</div>
+                  <div style="font:400 13px/1.4 'IBM Plex Mono',monospace;color:{{ b.moveColor }};margin-top:4px;">{{ b.move }}</div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ b.quoteError }}" hint-placeholder-val="{{ false }}">
+                <div style="text-align:right;">
+                  <div style="display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:4px;background:var(--watch-bg);color:var(--watch);font-size:12.5px;font-weight:500;"><span style="font-size:11px;">◈</span>시세 확인 필요</div>
+                  <div style="display:flex;gap:4px;justify-content:flex-end;margin-top:8px;">
+                    <button onClick="{{ b.onRetry }}" style="height:36px;padding:0 12px;border-radius:4px;border:0;background:var(--brand);color:var(--brand-ink);font-size:12.5px;cursor:pointer;">시세만 다시 받기</button>
+                    <button onClick="{{ b.onSkip }}" style="height:36px;padding:0 12px;border-radius:4px;border:0;background:transparent;color:var(--ink2);font-size:12.5px;cursor:pointer;" style-hover="background:var(--tint);">지금은 넘어가기</button>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+
+          <!-- 한 줄 요약 -->
+          <p style="font-family:'Gowun Batang',serif;font-size:clamp(18px,1.8vw,21px);line-height:1.55;margin:20px 0 0;max-width:44ch;">{{ b.headline }}</p>
+
+          <!-- 조용한 날 (빈 상태 C) -->
+          <sc-if value="{{ b.quiet }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:16px;">
+              <p style="font-size:14.5px;line-height:1.75;color:var(--ink2);margin:0 0 16px;max-width:48ch;">새로 들어온 뉴스나 공시가 없습니다. 마지막 소식은 3일 전 배당 관련 공시였어요.</p>
+              <button onClick="{{ b.onToggle }}" style="height:40px;padding:0 14px;border-radius:4px;border:1px solid var(--rule);background:transparent;font-size:13.5px;cursor:pointer;color:var(--ink2);transition:background 140ms ease;" style-hover="background:var(--tint);">지난 소식 보기</button>
+            </div>
+          </sc-if>
+
+          <!-- 펼치기 -->
+          <sc-if value="{{ b.showToggle }}" hint-placeholder-val="{{ true }}">
+            <button onClick="{{ b.onToggle }}" aria-expanded="{{ b.isOpen }}" style="margin-top:20px;height:44px;width:100%;display:flex;align-items:center;justify-content:space-between;padding:0 14px 0 12px;border-radius:6px;border:1px solid var(--rule-soft);background:transparent;cursor:pointer;font-size:13.5px;color:var(--ink2);transition:background 160ms ease,border-color 160ms ease;" style-hover="background:var(--tint);border-color:var(--rule);">
+              <span style="display:flex;align-items:center;gap:10px;">
+                <span style="font:500 11px 'IBM Plex Mono',monospace;color:var(--brand-soft);">{{ b.evidenceCount }}</span>
+                <span>{{ b.toggleLabel }}</span>
+              </span>
+              <span style="font-size:12px;color:var(--ink3);display:inline-block;transform:{{ b.caret }};transition:transform 200ms cubic-bezier(.32,.72,0,1);">⌄</span>
+            </button>
+          </sc-if>
+
+          <!-- ── 펼친 상세 ── -->
+          <sc-if value="{{ b.isOpen }}" hint-placeholder-val="{{ false }}">
+            <div data-layout="detail" style="margin-top:16px;background:var(--surface);border-radius:8px;padding:24px;animation:flash 200ms cubic-bezier(.32,.72,0,1);">
+
+              <!-- 판단 근거 패널 -->
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:24px 32px;padding-bottom:24px;border-bottom:1px solid var(--rule-soft);">
+                <div>
+                  <div style="font:500 11px/1 'IBM Plex Mono',monospace;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);margin-bottom:12px;">판단 근거</div>
+                  <div style="display:flex;flex-direction:column;gap:8px;">
+                    <sc-for list="{{ b.factors }}" as="f" hint-placeholder-count="3">
+                      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                        <span style="font-size:13.5px;color:var(--ink2);">{{ f.name }}</span>
+                        <span style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500;color:{{ f.color }};">
+                          <span style="font-size:10px;">{{ f.icon }}</span>{{ f.state }}
+                        </span>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+                <div>
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+                    <span style="font:500 11px/1 'IBM Plex Mono',monospace;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);">신호 신뢰도</span>
+                  </div>
+                  <sc-if value="{{ showHitRate }}" hint-placeholder-val="{{ true }}">
+                    <div>
+                      <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px;">
+                        <span style="font:500 26px/1 'IBM Plex Mono',monospace;">{{ b.hitRate }}</span>
+                        <span style="font-size:12.5px;color:var(--ink3);">{{ b.hitMeta }}</span>
+                      </div>
+                      <div style="height:6px;border-radius:3px;background:var(--sunken);overflow:hidden;margin-bottom:12px;">
+                        <div style="height:6px;width:{{ b.hitBar }};background:var(--brand-soft);border-radius:3px;"></div>
+                      </div>
+                      <p style="font-size:12.5px;line-height:1.7;color:var(--ink3);margin:0;">과거 같은 조건에서 이 신호가 20거래일 뒤 방향을 맞춘 비율입니다. 매수·매도 권유가 아닙니다.</p>
+                    </div>
+                  </sc-if>
+                </div>
+              </div>
+
+              <!-- 탭 -->
+              <div role="tablist" style="display:flex;gap:4px;flex-wrap:wrap;margin:20px 0 20px;border-bottom:1px solid var(--rule-soft);">
+                <sc-for list="{{ b.tabs }}" as="t" hint-placeholder-count="5">
+                  <button role="tab" aria-selected="{{ t.active }}" onClick="{{ t.onPick }}" style="position:relative;height:44px;padding:0 12px;background:transparent;border:0;cursor:pointer;font-size:13.5px;font-weight:{{ t.weight }};color:{{ t.color }};transition:color 140ms ease;">
+                    <span style="display:inline-flex;align-items:baseline;gap:6px;">{{ t.label }}<span style="font:400 11px 'IBM Plex Mono',monospace;color:var(--ink3);">{{ t.count }}</span></span>
+                    <sc-if value="{{ t.active }}" hint-placeholder-val="{{ false }}">
+                      <span style="position:absolute;left:8px;right:8px;bottom:-1px;height:2px;background:var(--brand);border-radius:1px;"></span>
+                    </sc-if>
+                  </button>
+                </sc-for>
+              </div>
+
+              <!-- 뉴스 -->
+              <sc-if value="{{ b.isNews }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;flex-direction:column;">
+                  <sc-for list="{{ b.news }}" as="n" hint-placeholder-count="4">
+                    <a href="#" style="display:flex;gap:16px;padding:14px 12px;margin:0 -12px;border-radius:6px;border-bottom:1px solid var(--rule-soft);transition:background 140ms ease;" style-hover="background:var(--tint);">
+                      <span style="font:400 11.5px/1.9 'IBM Plex Mono',monospace;color:var(--ink3);flex:none;width:44px;">{{ n.time }}</span>
+                      <span style="min-width:0;">
+                        <span style="display:block;font-size:14.5px;line-height:1.6;color:var(--ink);margin-bottom:6px;">{{ n.title }}</span>
+                        <span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                          <span style="font-size:12px;color:var(--ink3);">{{ n.source }}</span>
+                          <span style="display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 7px;border-radius:3px;background:{{ n.bg }};color:{{ n.color }};font-size:11px;font-weight:500;"><span style="font-size:9px;">{{ n.icon }}</span>{{ n.tag }}</span>
+                        </span>
+                      </span>
+                    </a>
+                  </sc-for>
+                </div>
+              </sc-if>
+
+              <!-- 공시 -->
+              <sc-if value="{{ b.isFilings }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-direction:column;">
+                  <sc-for list="{{ b.filings }}" as="f" hint-placeholder-count="2">
+                    <a href="#" style="display:flex;gap:16px;padding:14px 12px;margin:0 -12px;border-radius:6px;border-bottom:1px solid var(--rule-soft);transition:background 140ms ease;" style-hover="background:var(--tint);">
+                      <span style="font:400 11.5px/1.9 'IBM Plex Mono',monospace;color:var(--ink3);flex:none;width:64px;">{{ f.date }}</span>
+                      <span style="min-width:0;">
+                        <span style="display:block;font-size:14.5px;line-height:1.6;margin-bottom:6px;">{{ f.title }}</span>
+                        <span style="font-size:12px;color:var(--ink3);">{{ f.meta }}</span>
+                      </span>
+                    </a>
+                  </sc-for>
+                  <p style="font-size:12.5px;color:var(--ink3);margin:16px 0 0;">DART 원문으로 이동합니다 · 요약은 원문 기준</p>
+                </div>
+              </sc-if>
+
+              <!-- 컨센서스 -->
+              <sc-if value="{{ b.isConsensus }}" hint-placeholder-val="{{ false }}">
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:32px;">
+                  <div>
+                    <div style="font-size:13px;color:var(--ink2);margin-bottom:12px;">12개월 목표주가 <span style="color:var(--ink3);">· {{ b.consensus.count }}</span></div>
+                    <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:16px;">
+                      <span style="font:500 24px/1 'IBM Plex Mono',monospace;">{{ b.consensus.target }}</span>
+                      <span style="font-size:13px;color:var(--ink2);">{{ b.consensus.upside }}</span>
+                    </div>
+                    <div style="position:relative;height:8px;border-radius:4px;background:var(--sunken);margin-bottom:8px;">
+                      <div style="position:absolute;top:0;bottom:0;left:{{ b.consensus.bandLeft }};width:{{ b.consensus.bandWidth }};background:var(--up-bg);border-radius:4px;"></div>
+                      <div style="position:absolute;top:-3px;bottom:-3px;left:{{ b.consensus.markPos }};width:2px;background:var(--brand);border-radius:1px;"></div>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;font:400 11.5px 'IBM Plex Mono',monospace;color:var(--ink3);">
+                      <span>{{ b.consensus.low }}</span><span>현재가 {{ b.price }}</span><span>{{ b.consensus.high }}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="font-size:13px;color:var(--ink2);margin-bottom:12px;">투자의견 분포</div>
+                    <div style="display:flex;flex-direction:column;gap:10px;">
+                      <sc-for list="{{ b.opinions }}" as="o" hint-placeholder-count="3">
+                        <div style="display:flex;align-items:center;gap:12px;">
+                          <span style="font-size:13px;color:var(--ink2);width:56px;flex:none;">{{ o.label }}</span>
+                          <span style="flex:1;height:8px;border-radius:4px;background:var(--sunken);overflow:hidden;">
+                            <span style="display:block;height:8px;width:{{ o.pct }};background:{{ o.color }};border-radius:4px;"></span>
+                          </span>
+                          <span style="font:400 12px 'IBM Plex Mono',monospace;color:var(--ink3);width:24px;text-align:right;flex:none;">{{ o.n }}</span>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </div>
+                </div>
+              </sc-if>
+
+              <!-- 차트 -->
+              <sc-if value="{{ b.isChart }}" hint-placeholder-val="{{ false }}">
+                <div>
+                  <div style="display:flex;gap:4px;margin-bottom:16px;">
+                    <sc-for list="{{ b.ranges }}" as="r" hint-placeholder-count="4">
+                      <button onClick="{{ r.onPick }}" style="height:36px;padding:0 12px;border-radius:4px;border:1px solid {{ r.border }};background:{{ r.bg }};color:{{ r.color }};font:500 12.5px 'IBM Plex Mono',monospace;cursor:pointer;transition:background 140ms ease;">{{ r.label }}</button>
+                    </sc-for>
+                  </div>
+                  <svg viewBox="0 0 640 180" preserveAspectRatio="none" style="width:100%;height:180px;display:block;overflow:visible;">
+                    <path d="{{ b.chartArea }}" fill="var(--up-bg)"></path>
+                    <path d="{{ b.chartLine }}" fill="none" stroke="var(--brand)" stroke-width="1.75" stroke-linejoin="round"></path>
+                    <line x1="0" y1="{{ b.chartBase }}" x2="640" y2="{{ b.chartBase }}" stroke="var(--rule)" stroke-width="1" stroke-dasharray="3 4"></line>
+                  </svg>
+                  <div style="display:flex;justify-content:space-between;font:400 11.5px 'IBM Plex Mono',monospace;color:var(--ink3);margin-top:8px;">
+                    <span>{{ b.chartFrom }}</span><span>{{ b.chartLabel }}</span><span>{{ b.chartTo }}</span>
+                  </div>
+                </div>
+              </sc-if>
+
+              <!-- 수급 -->
+              <sc-if value="{{ b.isFlows }}" hint-placeholder-val="{{ false }}">
+                <div>
+                  <div style="display:flex;gap:24px;margin-bottom:16px;flex-wrap:wrap;">
+                    <span style="font-size:13px;color:var(--ink2);">외국인 5일 누적 <strong style="font:500 14px 'IBM Plex Mono',monospace;color:var(--ink);">{{ b.flowSum.foreign }}</strong></span>
+                    <span style="font-size:13px;color:var(--ink2);">기관 5일 누적 <strong style="font:500 14px 'IBM Plex Mono',monospace;color:var(--ink);">{{ b.flowSum.inst }}</strong></span>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:2px;">
+                    <sc-for list="{{ b.flows }}" as="fl" hint-placeholder-count="5">
+                      <div style="display:grid;grid-template-columns:56px 1fr 1fr;gap:16px;align-items:center;padding:8px 0;border-bottom:1px solid var(--rule-soft);">
+                        <span style="font:400 11.5px 'IBM Plex Mono',monospace;color:var(--ink3);">{{ fl.date }}</span>
+                        <span style="display:flex;align-items:center;gap:8px;">
+                          <span style="font-size:12px;color:var(--ink3);width:40px;flex:none;">외국인</span>
+                          <span style="font:400 12.5px 'IBM Plex Mono',monospace;color:{{ fl.fColor }};">{{ fl.foreign }}</span>
+                        </span>
+                        <span style="display:flex;align-items:center;gap:8px;">
+                          <span style="font-size:12px;color:var(--ink3);width:32px;flex:none;">기관</span>
+                          <span style="font:400 12.5px 'IBM Plex Mono',monospace;color:{{ fl.iColor }};">{{ fl.inst }}</span>
+                        </span>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <p style="font-size:12.5px;color:var(--ink3);margin:16px 0 0;">단위: 억원 · ▲ 순매수 / ▼ 순매도</p>
+                </div>
+              </sc-if>
+
+              <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--rule-soft);display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center;">
+                <span style="font-size:12.5px;color:var(--ink3);">{{ b.updated }}</span>
+                <button onClick="{{ b.onToggle }}" style="height:40px;padding:0 14px;border-radius:4px;border:0;background:transparent;color:var(--ink2);font-size:13px;cursor:pointer;transition:background 140ms ease;" style-hover="background:var(--tint);">브리핑만 보기 ⌃</button>
+              </div>
+            </div>
+          </sc-if>
+        </section>
+      </sc-for>
+
+      <!-- PWA 안내 (모바일) -->
+      <sc-if value="{{ showPwa }}" hint-placeholder-val="{{ false }}">
+        <div data-layout="pwa" style="display:none;margin-top:40px;padding:16px;border-radius:8px;background:var(--surface);">
+          <div style="font-family:'Gowun Batang',serif;font-size:16px;line-height:1.5;margin-bottom:8px;">홈 화면에 두면 매일 아침 바로 열립니다</div>
+          <p style="font-size:13px;line-height:1.7;color:var(--ink2);margin:0 0 16px;">브리핑 마지막 화면은 오프라인에서도 남아 있습니다. 계정은 필요 없습니다.</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button onClick="{{ onDismissPwa }}" style="height:44px;padding:0 16px;border-radius:6px;border:0;background:var(--brand);color:var(--brand-ink);font-size:13.5px;cursor:pointer;">홈 화면에 추가</button>
+            <button onClick="{{ onDismissPwa }}" style="height:44px;padding:0 16px;border-radius:6px;border:0;background:transparent;color:var(--ink2);font-size:13.5px;cursor:pointer;">지금은 넘어가기</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ hasBlocks }}" hint-placeholder-val="{{ true }}">
+        <p style="font-size:12.5px;line-height:1.8;color:var(--ink3);margin:48px 0 0;max-width:52ch;border-top:1px solid var(--rule-soft);padding-top:16px;">신호와 신뢰도는 과거 데이터에 기반한 참고 지표이며 투자 권유가 아닙니다. 시세는 근접 실시간(약 15분 지연)입니다.</p>
+      </sc-if>
+    </main>
+
+    <!-- ── 사이드 레일 ── -->
+    <aside data-layout="rail" style="position:sticky;top:132px;padding-top:40px;">
+      <div style="font:500 11px/1 'IBM Plex Mono',monospace;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);margin-bottom:16px;">오늘의 신호</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:32px;">
+        <sc-for list="{{ signalSummary }}" as="s" hint-placeholder-count="3">
+          <button onClick="{{ s.onPick }}" style="height:44px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 10px;margin:0 -10px;border:0;border-radius:6px;background:{{ s.bg }};cursor:pointer;transition:background 140ms ease;" style-hover="background:var(--tint);">
+            <span style="display:inline-flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink2);font-weight:{{ s.weight }};"><span style="font-size:10px;color:{{ s.color }};">{{ s.icon }}</span>{{ s.label }}만 보기</span>
+            <span style="font:500 13px 'IBM Plex Mono',monospace;">{{ s.n }}</span>
+          </button>
+        </sc-for>
+      </div>
+
+      <div style="font:500 11px/1 'IBM Plex Mono',monospace;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);margin-bottom:12px;">등락</div>
+      <div style="display:flex;flex-direction:column;margin-bottom:32px;">
+        <sc-for list="{{ miniList }}" as="m" hint-placeholder-count="4">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--rule-soft);">
+            <span style="font-size:13.5px;">{{ m.name }}</span>
+            <span style="font:400 12.5px 'IBM Plex Mono',monospace;color:{{ m.color }};">{{ m.move }}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="font:500 11px/1 'IBM Plex Mono',monospace;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);margin-bottom:12px;">예정된 일정</div>
+      <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:32px;">
+        <sc-for list="{{ schedule }}" as="e" hint-placeholder-count="3">
+          <div style="display:flex;gap:12px;">
+            <span style="font:400 11.5px/1.6 'IBM Plex Mono',monospace;color:var(--brand-soft);flex:none;width:44px;">{{ e.date }}</span>
+            <span style="font-size:13px;line-height:1.6;color:var(--ink2);">{{ e.text }}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="padding-top:16px;border-top:1px solid var(--rule-soft);">
+        <div style="font-size:12.5px;color:var(--ink3);margin-bottom:12px;">{{ lastSync }}</div>
+        <button onClick="{{ onRefresh }}" style="height:44px;width:100%;border-radius:6px;border:1px solid var(--rule);background:transparent;font-size:13.5px;color:var(--ink2);cursor:pointer;transition:background 140ms ease;" style-hover="background:var(--tint);">지금 다시 불러오기</button>
+        <button onClick="{{ onOpenSupport }}" style="height:44px;width:100%;border-radius:6px;border:0;background:transparent;font-size:13px;color:var(--ink3);cursor:pointer;text-align:left;padding:0 4px;transition:color 140ms ease;" style-hover="color:var(--brand-soft);">커피 한 잔 보내기</button>
+      </div>
+    </aside>
+  </div>
+  </sc-if>
+
+  <!-- ══ 종목 상세 ══ -->
+  <sc-if value="{{ hasDetail }}" hint-placeholder-val="{{ false }}">
+    <div data-layout="body" style="max-width:840px;margin:0 auto;padding:0 24px 120px;display:block;animation:flash 200ms cubic-bezier(.32,.72,0,1);">
+
+      <button onClick="{{ detail.onBack }}" style="margin-top:32px;height:44px;padding:0 12px 0 8px;display:inline-flex;align-items:center;gap:8px;background:transparent;border:0;border-radius:6px;cursor:pointer;font-size:13.5px;color:var(--ink2);transition:background 140ms ease;" style-hover="background:var(--tint);">
+        <span style="font-size:14px;">‹</span>브리핑 피드로 돌아가기
+      </button>
+
+      <div style="margin-top:24px;padding-bottom:24px;border-bottom:2px solid var(--rule);">
+        <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+          <h1 style="font-size:clamp(24px,3vw,32px);font-weight:600;line-height:1.25;margin:0;">{{ detail.name }}</h1>
+          <span style="font:400 13px 'IBM Plex Mono',monospace;color:var(--ink3);">{{ detail.ticker }}</span>
+          <span style="font-size:13px;color:var(--ink3);">{{ detail.sector }}</span>
+        </div>
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;">
+          <div>
+            <div style="font:500 clamp(28px,3.6vw,38px)/1.1 'IBM Plex Mono',monospace;">{{ detail.price }}</div>
+            <div style="font:400 14px/1.5 'IBM Plex Mono',monospace;color:{{ detail.moveColor }};margin-top:4px;">{{ detail.move }}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;height:32px;padding:0 12px;border-radius:4px;background:{{ detail.verdictBg }};color:{{ detail.verdictColor }};font-size:13px;font-weight:500;">
+            <span style="font-size:11px;">{{ detail.verdictIcon }}</span>{{ detail.verdictLabel }}
+          </div>
+        </div>
+        <p style="font-family:'Gowun Batang',serif;font-size:clamp(18px,2vw,22px);line-height:1.55;margin:24px 0 0;max-width:42ch;">{{ detail.headline }}</p>
+      </div>
+
+      <!-- 판단 근거 -->
+      <section style="padding:32px 0;border-bottom:1px solid var(--rule-soft);">
+        <div style="font:500 11px/1 'IBM Plex Mono',monospace;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);margin-bottom:16px;">판단 근거와 신뢰도</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px 40px;">
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <sc-for list="{{ detail.factors }}" as="f" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:8px;border-bottom:1px solid var(--rule-soft);">
+                <span style="font-size:14px;color:var(--ink2);">{{ f.name }}</span>
+                <span style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:{{ f.color }};"><span style="font-size:10px;">{{ f.icon }}</span>{{ f.state }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div>
+            <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px;">
+              <span style="font:500 32px/1 'IBM Plex Mono',monospace;">{{ detail.hitRate }}</span>
+              <span style="font-size:12.5px;color:var(--ink3);">{{ detail.hitMeta }}</span>
+            </div>
+            <div style="height:6px;border-radius:3px;background:var(--sunken);overflow:hidden;margin-bottom:12px;">
+              <div style="height:6px;width:{{ detail.hitBar }};background:var(--brand-soft);border-radius:3px;"></div>
+            </div>
+            <p style="font-size:12.5px;line-height:1.7;color:var(--ink3);margin:0;">과거 같은 조건에서 이 신호가 20거래일 뒤 방향을 맞춘 비율입니다. 매수·매도 권유가 아닙니다.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 차트 -->
+      <section style="padding:32px 0;border-bottom:1px solid var(--rule-soft);">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
+          <div style="font:500 11px/1 'IBM Plex Mono',monospace;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);">{{ detail.chartLabel }}</div>
+          <div style="display:flex;gap:4px;">
+            <sc-for list="{{ detail.ranges }}" as="r" hint-placeholder-count="4">
+              <button onClick="{{ r.onPick }}" style="height:36px;padding:0 12px;border-radius:4px;border:1px solid {{ r.border }};background:{{ r.bg }};color:{{ r.color }};font:500 12.5px 'IBM Plex Mono',monospace;cursor:pointer;">{{ r.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+        <svg viewBox="0 0 640 220" preserveAspectRatio="none" style="width:100%;height:220px;display:block;">
+          <path d="{{ detail.chartArea }}" fill="var(--up-bg)"></path>
+          <path d="{{ detail.chartLine }}" fill="none" stroke="var(--brand)" stroke-width="1.75" stroke-linejoin="round"></path>
+        </svg>
+        <div style="display:flex;justify-content:space-between;font:400 11.5px 'IBM Plex Mono',monospace;color:var(--ink3);margin-top:8px;">
+          <span>{{ detail.chartFrom }}</span><span>{{ detail.chartTo }}</span>
+        </div>
+      </section>
+
+      <!-- 컨센서스 -->
+      <section style="padding:32px 0;border-bottom:1px solid var(--rule-soft);">
+        <div style="font:500 11px/1 'IBM Plex Mono',monospace;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);margin-bottom:16px;">애널리스트 컨센서스</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:32px 40px;">
+          <div>
+            <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:16px;">
+              <span style="font:500 26px/1 'IBM Plex Mono',monospace;">{{ detail.consensus.target }}</span>
+              <span style="font-size:13px;color:var(--ink2);">{{ detail.consensus.upside }}</span>
+            </div>
+            <div style="position:relative;height:8px;border-radius:4px;background:var(--sunken);margin-bottom:8px;">
+              <div style="position:absolute;top:0;bottom:0;left:{{ detail.consensus.bandLeft }};width:{{ detail.consensus.bandWidth }};background:var(--up-bg);border-radius:4px;"></div>
+              <div style="position:absolute;top:-3px;bottom:-3px;left:{{ detail.consensus.markPos }};width:2px;background:var(--brand);border-radius:1px;"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font:400 11.5px 'IBM Plex Mono',monospace;color:var(--ink3);">
+              <span>{{ detail.consensus.low }}</span><span>{{ detail.consensus.count }}</span><span>{{ detail.consensus.high }}</span>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <sc-for list="{{ detail.opinions }}" as="o" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <span style="font-size:13px;color:var(--ink2);width:56px;flex:none;">{{ o.label }}</span>
+                <span style="flex:1;height:8px;border-radius:4px;background:var(--sunken);overflow:hidden;">
+                  <span style="display:block;height:8px;width:{{ o.pct }};background:{{ o.color }};border-radius:4px;"></span>
+                </span>
+                <span style="font:400 12px 'IBM Plex Mono',monospace;color:var(--ink3);width:24px;text-align:right;flex:none;">{{ o.n }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </section>
+
+      <!-- 뉴스 타임라인 -->
+      <section style="padding:32px 0;border-bottom:1px solid var(--rule-soft);">
+        <div style="font:500 11px/1 'IBM Plex Mono',monospace;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);margin-bottom:8px;">뉴스 타임라인</div>
+        <sc-for list="{{ detail.news }}" as="n" hint-placeholder-count="4">
+          <a href="#" style="display:flex;gap:16px;padding:14px 12px;margin:0 -12px;border-radius:6px;border-bottom:1px solid var(--rule-soft);transition:background 140ms ease;" style-hover="background:var(--tint);">
+            <span style="font:400 11.5px/1.9 'IBM Plex Mono',monospace;color:var(--ink3);flex:none;width:44px;">{{ n.time }}</span>
+            <span style="min-width:0;">
+              <span style="display:block;font-size:14.5px;line-height:1.6;color:var(--ink);margin-bottom:6px;">{{ n.title }}</span>
+              <span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <span style="font-size:12px;color:var(--ink3);">{{ n.source }}</span>
+                <span style="display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 7px;border-radius:3px;background:{{ n.bg }};color:{{ n.color }};font-size:11px;font-weight:500;"><span style="font-size:9px;">{{ n.icon }}</span>{{ n.tag }}</span>
+              </span>
+            </span>
+          </a>
+        </sc-for>
+      </section>
+
+      <!-- 공시 -->
+      <section style="padding:32px 0;border-bottom:1px solid var(--rule-soft);">
+        <div style="font:500 11px/1 'IBM Plex Mono',monospace;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);margin-bottom:8px;">공시 · DART</div>
+        <sc-for list="{{ detail.filings }}" as="f" hint-placeholder-count="2">
+          <a href="#" style="display:flex;gap:16px;padding:14px 12px;margin:0 -12px;border-radius:6px;border-bottom:1px solid var(--rule-soft);transition:background 140ms ease;" style-hover="background:var(--tint);">
+            <span style="font:400 11.5px/1.9 'IBM Plex Mono',monospace;color:var(--ink3);flex:none;width:64px;">{{ f.date }}</span>
+            <span style="min-width:0;">
+              <span style="display:block;font-size:14.5px;line-height:1.6;margin-bottom:6px;">{{ f.title }}</span>
+              <span style="font-size:12px;color:var(--ink3);">{{ f.meta }}</span>
+            </span>
+          </a>
+        </sc-for>
+      </section>
+
+      <!-- 수급 -->
+      <section style="padding:32px 0;">
+        <div style="font:500 11px/1 'IBM Plex Mono',monospace;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);margin-bottom:16px;">수급 · 최근 5거래일</div>
+        <div style="display:flex;gap:24px;margin-bottom:16px;flex-wrap:wrap;">
+          <span style="font-size:13px;color:var(--ink2);">외국인 누적 <strong style="font:500 14px 'IBM Plex Mono',monospace;color:var(--ink);">{{ detail.flowSum.foreign }}</strong></span>
+          <span style="font-size:13px;color:var(--ink2);">기관 누적 <strong style="font:500 14px 'IBM Plex Mono',monospace;color:var(--ink);">{{ detail.flowSum.inst }}</strong></span>
+        </div>
+        <sc-for list="{{ detail.flows }}" as="fl" hint-placeholder-count="5">
+          <div style="display:grid;grid-template-columns:64px 1fr 1fr;gap:16px;align-items:center;padding:10px 0;border-bottom:1px solid var(--rule-soft);">
+            <span style="font:400 11.5px 'IBM Plex Mono',monospace;color:var(--ink3);">{{ fl.date }}</span>
+            <span style="display:flex;align-items:center;gap:8px;"><span style="font-size:12px;color:var(--ink3);width:40px;flex:none;">외국인</span><span style="font:400 12.5px 'IBM Plex Mono',monospace;color:{{ fl.fColor }};">{{ fl.foreign }}</span></span>
+            <span style="display:flex;align-items:center;gap:8px;"><span style="font-size:12px;color:var(--ink3);width:32px;flex:none;">기관</span><span style="font:400 12.5px 'IBM Plex Mono',monospace;color:{{ fl.iColor }};">{{ fl.inst }}</span></span>
+          </div>
+        </sc-for>
+        <p style="font-size:12.5px;color:var(--ink3);margin:16px 0 0;">단위: 억원 · ▲ 순매수 / ▼ 순매도 · {{ detail.updated }}</p>
+      </section>
+
+      <div style="position:sticky;bottom:0;background:var(--bg);border-top:1px solid var(--rule);padding:16px 0;display:flex;gap:8px;flex-wrap:wrap;">
+        <button onClick="{{ detail.onBack }}" style="height:44px;padding:0 16px;border-radius:6px;border:0;background:var(--brand);color:var(--brand-ink);font-size:13.5px;cursor:pointer;">브리핑 피드로 돌아가기</button>
+        <button onClick="{{ detail.onRemoveFromDetail }}" style="height:44px;padding:0 16px;border-radius:6px;border:1px solid var(--rule);background:transparent;color:var(--ink2);font-size:13.5px;cursor:pointer;transition:background 140ms ease,color 140ms ease;" style-hover="background:var(--down-bg);color:var(--down);">관심종목에서 빼기</button>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;'dark'|'light'&quot;,&quot;section&quot;:&quot;표시&quot;},&quot;briefTone&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;짧게&quot;,&quot;기본&quot;,&quot;설명적&quot;],&quot;default&quot;:&quot;기본&quot;,&quot;tsType&quot;:&quot;'짧게'|'기본'|'설명적'&quot;,&quot;section&quot;:&quot;브리핑 톤&quot;},&quot;showHitRate&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;신호&quot;},&quot;startEmpty&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;표시&quot;}}">
+const UNIVERSE = [
+  { name: "삼성전자", ticker: "005930", sector: "반도체" },
+  { name: "삼성SDI", ticker: "006400", sector: "2차전지" },
+  { name: "삼성바이오로직스", ticker: "207940", sector: "바이오" },
+  { name: "SK하이닉스", ticker: "000660", sector: "반도체" },
+  { name: "카카오", ticker: "035720", sector: "인터넷" },
+  { name: "현대차", ticker: "005380", sector: "자동차" },
+  { name: "NAVER", ticker: "035420", sector: "인터넷" },
+  { name: "LG에너지솔루션", ticker: "373220", sector: "2차전지" },
+  { name: "셀트리온", ticker: "068270", sector: "바이오" },
+  { name: "HD현대일렉트릭", ticker: "267260", sector: "전력기기" }
+];
+
+const DATA = {
+  "005930": {
+    price: "71,400", changePct: 1.84, dir: "up",
+    headline: "HBM3E 양산 승인 소식에 외국인 수급이 5거래일째 들어왔습니다.",
+    verdict: "긍정 우위",
+    factors: [{ name: "수급", state: "강세" }, { name: "밸류에이션", state: "중립" }, { name: "모멘텀", state: "강세" }, { name: "실적 추정", state: "상향" }],
+    hitRate: 64, sampleN: 41,
+    news: [
+      { time: "09:12", title: "삼성전자, 엔비디아 HBM3E 품질 승인 절차 마무리 단계", source: "전자신문", tag: "호재 신호", tone: "up" },
+      { time: "08:40", title: "3분기 반도체 부문 영업이익 컨센서스 2주 연속 상향", source: "한국경제", tag: "호재 신호", tone: "up" },
+      { time: "07:55", title: "메모리 현물가 상승폭 둔화 — 4분기 가격 협상 변수", source: "머니투데이", tag: "확인 필요", tone: "watch" },
+      { time: "어제", title: "파운드리 2나노 수주 관련 공식 입장 없음", source: "연합뉴스", tag: "중립", tone: "flat" }
+    ],
+    filings: [
+      { date: "09.04", title: "자기주식 취득 결과보고서", meta: "취득 완료 · 1,200억원 규모" },
+      { date: "09.01", title: "단일판매·공급계약 체결", meta: "계약금액 8,400억원 · 매출액 대비 0.3%" }
+    ],
+    consensus: { target: "94,000", upside: "+31.7% 여력", low: "78,000", high: "112,000", count: "증권사 27곳", bandLeft: "18%", bandWidth: "58%", markPos: "24%" },
+    opinions: [{ label: "매수", n: 24, pct: "89%", tone: "up" }, { label: "중립", n: 3, pct: "11%", tone: "flat" }, { label: "매도", n: 0, pct: "0%", tone: "down" }],
+    flows: [
+      { date: "09.04", foreign: 1240, inst: -310 }, { date: "09.03", foreign: 890, inst: 220 },
+      { date: "09.02", foreign: 1510, inst: -140 }, { date: "09.01", foreign: 430, inst: 610 },
+      { date: "08.29", foreign: 720, inst: -80 }
+    ],
+    series: [62, 61, 63, 62, 64, 66, 65, 67, 66, 68, 67, 69, 71, 70, 69, 71, 73, 72, 74, 73, 75, 74, 76, 78, 77, 79, 81, 80, 82, 84]
+  },
+  "000660": {
+    price: "214,500", changePct: 3.12, dir: "up",
+    headline: "목표주가 상향이 이어지지만, 밸류에이션 부담을 지적하는 리포트도 함께 나왔습니다.",
+    verdict: "관망",
+    factors: [{ name: "수급", state: "중립" }, { name: "밸류에이션", state: "부담" }, { name: "모멘텀", state: "강세" }, { name: "실적 추정", state: "상향" }],
+    hitRate: 52, sampleN: 33,
+    news: [
+      { time: "10:05", title: "증권가 목표주가 잇단 상향 — 평균 26만원선", source: "이데일리", tag: "호재 신호", tone: "up" },
+      { time: "09:31", title: "PBR 2.4배, 과거 고점 구간 진입 지적", source: "서울경제", tag: "확인 필요", tone: "watch" },
+      { time: "08:20", title: "HBM 공급 계약 연장 협의 진행 중", source: "블룸버그", tag: "호재 신호", tone: "up" }
+    ],
+    filings: [{ date: "09.02", title: "투자판단 관련 주요경영사항", meta: "청주 M15X 증설 투자 결정 · 4.2조원" }],
+    consensus: { target: "262,000", upside: "+22.1% 여력", low: "205,000", high: "310,000", count: "증권사 22곳", bandLeft: "12%", bandWidth: "66%", markPos: "16%" },
+    opinions: [{ label: "매수", n: 19, pct: "86%", tone: "up" }, { label: "중립", n: 3, pct: "14%", tone: "flat" }, { label: "매도", n: 0, pct: "0%", tone: "down" }],
+    flows: [
+      { date: "09.04", foreign: 2140, inst: 180 }, { date: "09.03", foreign: -420, inst: 340 },
+      { date: "09.02", foreign: 980, inst: -220 }, { date: "09.01", foreign: 1310, inst: -60 },
+      { date: "08.29", foreign: -190, inst: 410 }
+    ],
+    series: [58, 60, 59, 62, 64, 63, 66, 68, 67, 70, 72, 71, 74, 76, 75, 73, 76, 78, 80, 79, 82, 84, 83, 86, 88, 87, 90, 92, 91, 94]
+  },
+  "035720": {
+    price: "38,150", changePct: -2.41, dir: "down",
+    headline: "규제 이슈가 재점화되며 기관 매도가 3거래일 이어졌습니다.",
+    verdict: "주의",
+    factors: [{ name: "수급", state: "약세" }, { name: "밸류에이션", state: "중립" }, { name: "모멘텀", state: "약세" }, { name: "실적 추정", state: "하향" }],
+    hitRate: 58, sampleN: 27,
+    news: [
+      { time: "11:20", title: "플랫폼 수수료 관련 공정위 현장조사 착수", source: "조선비즈", tag: "악재 신호", tone: "down" },
+      { time: "09:44", title: "3분기 광고 매출 추정치 소폭 하향", source: "미래에셋리서치", tag: "악재 신호", tone: "down" },
+      { time: "08:15", title: "AI 서비스 신규 구독 지표는 개선 흐름", source: "테크M", tag: "호재 신호", tone: "up" }
+    ],
+    filings: [{ date: "08.30", title: "주식매수선택권 부여 결정", meta: "임직원 42만주 · 행사가 41,300원" }],
+    consensus: { target: "48,000", upside: "+25.8% 여력", low: "36,000", high: "62,000", count: "증권사 18곳", bandLeft: "10%", bandWidth: "70%", markPos: "14%" },
+    opinions: [{ label: "매수", n: 11, pct: "61%", tone: "up" }, { label: "중립", n: 6, pct: "33%", tone: "flat" }, { label: "매도", n: 1, pct: "6%", tone: "down" }],
+    flows: [
+      { date: "09.04", foreign: -310, inst: -740 }, { date: "09.03", foreign: -120, inst: -520 },
+      { date: "09.02", foreign: 90, inst: -410 }, { date: "09.01", foreign: -260, inst: 130 },
+      { date: "08.29", foreign: 140, inst: -80 }
+    ],
+    series: [86, 85, 87, 84, 82, 83, 80, 81, 78, 76, 77, 74, 75, 72, 70, 71, 68, 69, 66, 64, 65, 62, 60, 61, 58, 56, 57, 54, 52, 50]
+  },
+  "005380": {
+    price: "246,000", changePct: -0.20, dir: "down", quiet: true,
+    headline: "오늘은 조용합니다.",
+    verdict: "관망",
+    factors: [{ name: "수급", state: "중립" }, { name: "밸류에이션", state: "저평가" }, { name: "모멘텀", state: "중립" }, { name: "실적 추정", state: "유지" }],
+    hitRate: 49, sampleN: 36,
+    news: [{ time: "3일 전", title: "분기 배당 지급 관련 공시 외 신규 소식 없음", source: "DART", tag: "중립", tone: "flat" }],
+    filings: [{ date: "09.01", title: "현금·현물배당 결정", meta: "주당 2,000원 · 시가배당률 0.8%" }],
+    consensus: { target: "312,000", upside: "+26.8% 여력", low: "270,000", high: "360,000", count: "증권사 24곳", bandLeft: "16%", bandWidth: "62%", markPos: "20%" },
+    opinions: [{ label: "매수", n: 20, pct: "83%", tone: "up" }, { label: "중립", n: 4, pct: "17%", tone: "flat" }, { label: "매도", n: 0, pct: "0%", tone: "down" }],
+    flows: [
+      { date: "09.04", foreign: 60, inst: -40 }, { date: "09.03", foreign: -30, inst: 80 },
+      { date: "09.02", foreign: 120, inst: -20 }, { date: "09.01", foreign: -70, inst: 50 },
+      { date: "08.29", foreign: 40, inst: 10 }
+    ],
+    series: [70, 71, 70, 69, 70, 71, 72, 71, 70, 71, 70, 69, 70, 71, 72, 71, 70, 69, 70, 71, 70, 71, 72, 71, 70, 69, 70, 71, 70, 70]
+  }
+};
+
+const TFS = ["1분", "15분", "1시간", "4시간", "일", "주", "월"];
+const TF_STEP = { "1분": 60, "15분": 900, "1시간": 3600, "4시간": 14400, "일": 86400, "주": 604800, "월": 2592000 };
+const PROXY = {
+  "MARKET": { base: 20.56, est: 20.69, quality: "high" },
+  "005930": { base: 20.56, est: 20.69, quality: "high" },
+  "000660": { base: 20.56, est: 20.81, quality: "high" },
+  "005380": { base: 20.56, est: 20.52, quality: "high" },
+  "035720": { base: 20.56, est: 20.44, quality: "low" }
+};
+
+function proxySeries(ticker, tf) {
+  const cfg = PROXY[ticker] || PROXY["005930"];
+  const step = TF_STEP[tf], n = 90;
+  const end = Math.floor(Date.UTC(2026, 8, 4, 0, 53, 0) / 1000);
+  let seed = ticker.split("").reduce((a, c) => a + c.charCodeAt(0), tf.length * 17);
+  const rnd = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648 - 0.5; };
+  const est = [], act = [];
+  let v = cfg.base - (cfg.est - cfg.base) * 6;
+  for (let i = 0; i < n; i++) {
+    const t = end - (n - 1 - i) * step;
+    v += (cfg.est - v) * 0.06 + rnd() * cfg.base * 0.0022;
+    est.push({ time: t, value: +v.toFixed(3) });
+    if (i < n - 18) act.push({ time: t, value: +(v - (cfg.est - cfg.base) * 0.55 + rnd() * cfg.base * 0.0014).toFixed(3) });
+  }
+  est[est.length - 1].value = cfg.est;
+  if (act.length) act[act.length - 1].value = +(cfg.base).toFixed(2);
+  return { est, act, cfg };
+}
+
+const VERDICTS = {
+  "긍정 우위": { icon: "◆", color: "var(--up)", bg: "var(--up-bg)" },
+  "주의": { icon: "▽", color: "var(--down)", bg: "var(--down-bg)" },
+  "관망": { icon: "◇", color: "var(--ink2)", bg: "var(--tint)" },
+  "확인 필요": { icon: "◈", color: "var(--watch)", bg: "var(--watch-bg)" }
+};
+const FACTOR_TONE = {
+  "강세": ["▲", "var(--up)"], "상향": ["▲", "var(--up)"], "저평가": ["▲", "var(--up)"],
+  "약세": ["▼", "var(--down)"], "하향": ["▼", "var(--down)"], "부담": ["▼", "var(--down)"],
+  "중립": ["–", "var(--ink3)"], "유지": ["–", "var(--ink3)"]
+};
+const TAG_TONE = {
+  up: { icon: "◆", color: "var(--up)", bg: "var(--up-bg)" },
+  down: { icon: "▽", color: "var(--down)", bg: "var(--down-bg)" },
+  watch: { icon: "◈", color: "var(--watch)", bg: "var(--watch-bg)" },
+  flat: { icon: "◇", color: "var(--ink2)", bg: "var(--tint)" }
+};
+const TABS = [
+  { key: "news", label: "뉴스" }, { key: "filings", label: "공시" },
+  { key: "consensus", label: "컨센서스" }, { key: "chart", label: "차트" }, { key: "flows", label: "수급" }
+];
+const RANGES = ["1D", "1W", "3M", "1Y"];
+
+class Component extends DCLogic {
+  state = {
+    theme: null,
+    list: null,
+    query: "",
+    open: {},
+    tab: {},
+    range: {},
+    loading: false,
+    errored: { "000660": true },
+    skipped: {},
+    detail: null,
+    filter: null,
+    dragFrom: null,
+    indexOpen: true,
+    pwaDismissed: false,
+    proxyTf: {},
+    view: "feed",
+    proxySel: "MARKET"
+  };
+
+  get list() {
+    if (this.state.list) return this.state.list;
+    return this.props.startEmpty ? [] : ["005930", "000660", "035720", "005380"];
+  }
+  get theme() { return this.state.theme || this.props.theme || "dark"; }
+
+  componentDidMount() { document.documentElement.dataset.theme = this.theme; }
+  componentDidUpdate() { document.documentElement.dataset.theme = this.theme; }
+
+  setList(next) { this.setState({ list: next }); }
+
+  add = (ticker) => {
+    if (this.list.includes(ticker)) return;
+    this.setState({ list: [...this.list, ticker], query: "", loading: true });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.setState({ loading: false }), 850);
+  };
+  remove = (ticker) => this.setList(this.list.filter(t => t !== ticker));
+
+  reorder = (from, to) => {
+    if (from === to || from == null) return;
+    const next = [...this.list];
+    next.splice(to, 0, next.splice(from, 1)[0]);
+    this.setState({ list: next, dragFrom: null });
+  };
+
+  refresh = () => {
+    this.setState({ loading: true });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.setState({ loading: false }), 900);
+  };
+
+  path(series, w, h) {
+    const min = Math.min(...series), max = Math.max(...series), span = max - min || 1;
+    const pts = series.map((v, i) => [
+      (i / (series.length - 1)) * w,
+      h - 8 - ((v - min) / span) * (h - 24)
+    ]);
+    const line = pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
+    return { line, area: line + " L" + w + " " + h + " L0 " + h + " Z" };
+  }
+
+  renderVals() {
+    const list = this.list;
+    const q = this.state.query.trim();
+    const showHitRate = this.props.showHitRate !== false;
+
+    const suggestions = q
+      ? UNIVERSE.filter(u => u.name.toLowerCase().includes(q.toLowerCase()) || u.ticker.includes(q)).slice(0, 6)
+        .map(u => ({
+          name: u.name, ticker: u.ticker,
+          added: list.includes(u.ticker),
+          hint: list.includes(u.ticker) ? "등록됨" : "추가",
+          nameColor: list.includes(u.ticker) ? "var(--ink3)" : "var(--ink)",
+          onPick: () => this.add(u.ticker)
+        }))
+      : [];
+
+    const buildBlock = (ticker) => {
+      const meta = UNIVERSE.find(u => u.ticker === ticker);
+      const d = DATA[ticker];
+      if (!d) return null;
+      const isOpen = !!this.state.open[ticker];
+      const tab = this.state.tab[ticker] || "news";
+      const range = this.state.range[ticker] || "3M";
+      const quoteError = !!this.state.errored[ticker] && !this.state.skipped[ticker];
+      const v = VERDICTS[d.verdict];
+      const evid = d.news.length + d.filings.length;
+      const ch = this.path(d.series, 640, 180);
+      const up = d.dir === "up";
+
+      return {
+        name: meta.name, ticker: meta.ticker, sector: meta.sector,
+        price: d.price,
+        move: (up ? "▲ +" : "▼ ") + d.changePct.toFixed(2) + "%",
+        moveColor: up ? "var(--pos)" : "var(--neg)",
+        hasQuote: !quoteError, quoteError,
+        onRetry: () => this.setState({ errored: { ...this.state.errored, [ticker]: false } }),
+        onSkip: () => this.setState({ skipped: { ...this.state.skipped, [ticker]: true } }),
+        headline: d.headline,
+        quiet: !!d.quiet && !isOpen,
+        showToggle: !d.quiet || isOpen,
+        verdictLabel: d.verdict, verdictIcon: v.icon, verdictColor: v.color, verdictBg: v.bg,
+        factors: d.factors.map(f => ({ name: f.name, state: f.state, icon: FACTOR_TONE[f.state][0], color: FACTOR_TONE[f.state][1] })),
+        hitRate: d.hitRate + "%",
+        hitBar: d.hitRate + "%",
+        hitMeta: "표본 " + d.sampleN + "회 · 20거래일 기준",
+        hitSample: d.sampleN + "회",
+        isOpen,
+        caret: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+        evidenceCount: "근거 " + evid + "건",
+        toggleLabel: isOpen ? "브리핑만 보기" : "뉴스·공시·컨센서스·차트·수급 펼치기",
+        onToggle: () => this.setState({ open: { ...this.state.open, [ticker]: !isOpen } }),
+        tabs: TABS.map(t => {
+          const counts = { news: d.news.length, filings: d.filings.length, consensus: "", chart: "", flows: "5일" };
+          return {
+            label: t.label, count: counts[t.key], active: tab === t.key,
+            color: tab === t.key ? "var(--ink)" : "var(--ink3)",
+            weight: tab === t.key ? 600 : 400,
+            onPick: () => this.setState({ tab: { ...this.state.tab, [ticker]: t.key } })
+          };
+        }),
+        isNews: tab === "news", isFilings: tab === "filings",
+        isConsensus: tab === "consensus", isChart: tab === "chart", isFlows: tab === "flows",
+        news: d.news.map(n => ({ ...n, icon: TAG_TONE[n.tone].icon, color: TAG_TONE[n.tone].color, bg: TAG_TONE[n.tone].bg })),
+        filings: d.filings,
+        consensus: d.consensus,
+        opinions: d.opinions.map(o => ({ ...o, color: o.tone === "up" ? "var(--up)" : o.tone === "down" ? "var(--down)" : "var(--ink3)" })),
+        ranges: RANGES.map(r => ({
+          label: r,
+          bg: range === r ? "var(--brand)" : "transparent",
+          color: range === r ? "var(--brand-ink)" : "var(--ink2)",
+          border: range === r ? "var(--brand)" : "var(--rule)",
+          onPick: () => this.setState({ range: { ...this.state.range, [ticker]: r } })
+        })),
+        chartLine: ch.line, chartArea: ch.area, chartBase: 172,
+        chartLabel: range + " 종가 추이",
+        chartFrom: range === "1D" ? "09:00" : "6월 04",
+        chartTo: range === "1D" ? "15:30" : "9월 04",
+        flows: d.flows.map(f => ({
+          date: f.date,
+          foreign: (f.foreign > 0 ? "▲ +" : "▼ ") + f.foreign.toLocaleString(),
+          inst: (f.inst > 0 ? "▲ +" : "▼ ") + f.inst.toLocaleString(),
+          fColor: f.foreign > 0 ? "var(--pos)" : "var(--neg)",
+          iColor: f.inst > 0 ? "var(--pos)" : "var(--neg)"
+        })),
+        flowSum: {
+          foreign: (d.flows.reduce((a, f) => a + f.foreign, 0) > 0 ? "+" : "") + d.flows.reduce((a, f) => a + f.foreign, 0).toLocaleString() + "억",
+          inst: (d.flows.reduce((a, f) => a + f.inst, 0) > 0 ? "+" : "") + d.flows.reduce((a, f) => a + f.inst, 0).toLocaleString() + "억"
+        },
+        updated: "09월 04일 15:42 기준 · 시세 15분 지연",
+        onOpenDetail: () => this.setState({ detail: ticker }),
+        onRemoveFromDetail: () => { this.remove(ticker); this.setState({ detail: null }); },
+        onBack: () => this.setState({ detail: null })
+      };
+    };
+    const filter = this.state.filter;
+    const tone = this.props.briefTone || "기본";
+    const sel = PROXY[this.state.proxySel] ? this.state.proxySel : "MARKET";
+    const selCfg = PROXY[sel];
+    const blocks = (this.state.loading ? [] : list)
+      .filter(t => !filter || (DATA[t] && DATA[t].verdict === filter))
+      .map(buildBlock).filter(Boolean);
+    const detail = this.state.detail && list.includes(this.state.detail) ? buildBlock(this.state.detail) : null;
+
+    const counts = list.reduce((acc, t) => {
+      const v = DATA[t] && DATA[t].verdict;
+      if (v) acc[v] = (acc[v] || 0) + 1;
+      return acc;
+    }, {});
+
+    return {
+      theme: this.theme,
+      themeLabel: this.theme === "dark" ? "밝게 보기" : "어둡게 보기",
+      onToggleTheme: () => this.setState({ theme: this.theme === "dark" ? "light" : "dark" }),
+      query: this.state.query,
+      onQuery: (e) => this.setState({ query: e.target.value }),
+      onQueryKey: (e) => { if (e.key === "Enter" && suggestions[0] && !suggestions[0].added) suggestions[0].onPick(); },
+      suggestions, hasSuggestions: suggestions.length > 0,
+      chips: list.map((t, i) => {
+        const m = UNIVERSE.find(u => u.ticker === t);
+        return {
+          name: m ? m.name : t,
+          onRemove: () => this.remove(t),
+          dragging: this.state.dragFrom === i,
+          opacity: this.state.dragFrom === i ? 0.45 : 1,
+          onDragStart: () => this.setState({ dragFrom: i }),
+          onDragOver: (e) => e.preventDefault(),
+          onDrop: (e) => { e.preventDefault(); this.reorder(this.state.dragFrom, i); },
+          onDragEnd: () => this.setState({ dragFrom: null })
+        };
+      }),
+      hasChips: list.length > 0,
+      chipMeta: list.length + "개 · 이 브라우저에만 저장됩니다",
+      isEmpty: list.length === 0,
+      loading: this.state.loading,
+      loadingNote: "뉴스·공시·컨센서스·수급을 모으고 있습니다",
+      skeletons: [1, 2],
+      showBrief: list.length > 0 && !this.state.loading,
+      todayLabel: "2026년 9월 4일 금요일 · 장 마감",
+      dailyBrief: tone === "짧게"
+        ? "반도체 강세, 카카오는 규제 이슈."
+        : "반도체 두 종목이 오늘 브리핑을 끌고 갑니다. 카카오는 규제 쪽을 한 번 보셔야 합니다.",
+      dailySub: tone === "짧게"
+        ? "긍정 우위 " + (counts["긍정 우위"] || 0) + " · 주의 " + (counts["주의"] || 0) + " · 관망 " + (counts["관망"] || 0)
+        : tone === "설명적"
+          ? "관심종목 " + list.length + "개 중 " + (counts["긍정 우위"] || 0) + "개에서 긍정 우위, " + (counts["주의"] || 0) + "개에서 주의 신호가 잡혔습니다. 신호는 수급·밸류에이션·모멘텀·실적 추정 네 축을 각각 판정한 뒤 종합한 결과이며, 각 축의 판정과 과거 20거래일 기준 적중률은 종목별 상세에서 확인할 수 있습니다. 단정적인 매수·매도 판단은 제공하지 않습니다."
+          : "관심종목 " + list.length + "개 중 " + (counts["긍정 우위"] || 0) + "개에서 긍정 우위, " + (counts["주의"] || 0) + "개에서 주의 신호가 잡혔습니다. 각 종목의 판단 근거와 과거 적중률은 상세를 펼쳐 확인할 수 있습니다.",
+      noMatch: !!filter && blocks.length === 0 && !this.state.loading && list.length > 0,
+      noMatchTitle: filter + " 신호가 있는 종목이 없습니다",
+      blocks, hasBlocks: blocks.length > 0,
+      detail,
+      hasDetail: !!detail && this.state.view === "feed",
+      showFeed: !detail && this.state.view === "feed",
+      showProxyView: this.state.view === "proxy",
+      showSupport: this.state.view === "support",
+      onOpenSupport: () => this.setState({ view: "support" }),
+      supportPresets: [
+        { key: "coffee", label: "자판기 커피", amount: "1,000원", note: "가장 많이 보내주시는 금액" },
+        { key: "lunch", label: "커피 한 잔", amount: "2,500원", note: "넉넉하게" },
+        { key: "free", label: "자유 금액", amount: "직접 입력", note: "500원부터" }
+      ].map(p => ({
+        ...p,
+        selected: (this.state.supportSel || "coffee") === p.key,
+        border: (this.state.supportSel || "coffee") === p.key ? "var(--brand-soft)" : "var(--rule)",
+        bg: (this.state.supportSel || "coffee") === p.key ? "var(--tint)" : "transparent",
+        onPick: () => this.setState({ supportSel: p.key })
+      })),
+      supportFree: (this.state.supportSel || "coffee") === "free",
+      supportCustom: this.state.supportCustom || "",
+      onSupportCustom: (e) => this.setState({ supportCustom: e.target.value.replace(/[^0-9]/g, "") }),
+      supportSendLabel: (this.state.supportSel || "coffee") === "free"
+        ? (this.state.supportCustom ? Number(this.state.supportCustom).toLocaleString() + "원 보내기" : "금액을 입력해 주세요")
+        : ((this.state.supportSel || "coffee") === "lunch" ? "2,500원 보내기" : "1,000원 보내기"),
+      nav: [
+        { key: "feed", label: "브리핑" },
+        { key: "proxy", label: "개장 전 추정가" },
+        { key: "support", label: "커피 한 잔" }
+      ].map(v => ({
+        label: v.label,
+        active: this.state.view === v.key,
+        bg: this.state.view === v.key ? "var(--tint)" : "transparent",
+        color: this.state.view === v.key ? "var(--ink)" : "var(--ink3)",
+        weight: this.state.view === v.key ? 600 : 400,
+        onPick: () => this.setState({ view: v.key, detail: null })
+      })),
+      onBackToFeed: () => this.setState({ view: "feed" }),
+      proxyChart: (() => {
+        const tf = this.state.proxyTf[sel] || "15분";
+        const { est, act } = proxySeries(sel, tf);
+        const W = 640, H = 300, PAD = 14;
+        const vals = est.map(p => p.value).concat(act.map(p => p.value));
+        const lo = Math.min(...vals), hi = Math.max(...vals), span = (hi - lo) || 1;
+        const x = (i, n) => (i / (n - 1)) * W;
+        const y = (v) => H - PAD - ((v - lo) / span) * (H - PAD * 2);
+        const line = (arr) => arr.map((p, i) => (i ? "L" : "M") + x(i, est.length).toFixed(1) + " " + y(p.value).toFixed(1)).join(" ");
+        const estLine = line(est), actLine = line(act);
+        const last = act.length ? act[act.length - 1] : null;
+        const fmt = (t) => {
+          const d2 = new Date(t * 1000);
+          const hh = String(d2.getUTCHours()).padStart(2, "0"), mm = String(d2.getUTCMinutes()).padStart(2, "0");
+          return ["일", "주", "월"].includes(tf) ? (d2.getUTCMonth() + 1) + "월 " + d2.getUTCDate() + "일" : hh + ":" + mm;
+        };
+        return {
+          estLine, actLine,
+          area: estLine + " L" + W + " " + H + " L0 " + H + " Z",
+          hi: "$" + hi.toFixed(2), lo: "$" + lo.toFixed(2),
+          mid: "$" + ((hi + lo) / 2).toFixed(2),
+          from: fmt(est[0].time), to: fmt(est[est.length - 1].time),
+          dotX: last ? x(act.length - 1, est.length).toFixed(1) : "0",
+          dotY: last ? y(last.value).toFixed(1) : "0",
+          gridA: (H * 0.2).toFixed(0), gridB: (H * 0.5).toFixed(0), gridC: (H * 0.8).toFixed(0)
+        };
+      })(),
+      gap: (() => {
+        const { est, act } = proxySeries(sel, this.state.proxyTf[sel] || "15분");
+        const pairs = act.map((a, i) => ({ t: a.time, d: ((est[i].value - a.value) / a.value) * 100 }));
+        const tail = pairs.slice(-24);
+        const now = pairs.length ? pairs[pairs.length - 1].d : 0;
+        const avg = pairs.reduce((s2, p) => s2 + p.d, 0) / (pairs.length || 1);
+        const max = Math.max(...tail.map(p => Math.abs(p.d)), 0.1);
+        const wide = Math.abs(now) > Math.abs(avg) * 1.25;
+        return {
+          now: (now >= 0 ? "+" : "−") + Math.abs(now).toFixed(2) + "%p",
+          nowColor: "var(--ink)",
+          emphBorder: wide ? "2px solid var(--ink3)" : "1px solid var(--rule)",
+          emphWeight: wide ? 600 : 400,
+          fxLabel: "환율 보정 반영",
+          avg: (avg >= 0 ? "+" : "−") + Math.abs(avg).toFixed(2) + "%p",
+          state: wide ? "괴리 확대" : "정상 범위",
+          stateColor: "var(--ink2)",
+          stateIcon: wide ? "◈" : "◇",
+          hint: wide
+            ? "추정가와 실제가 차이가 평소보다 벌어졌습니다. 개장 방향 참고 신뢰도를 낮춰 보세요."
+            : "추정가와 실제가 차이가 최근 평균 범위 안에 있습니다.",
+          bars: tail.map(p => ({
+            h: Math.max(3, Math.round((Math.abs(p.d) / max) * 40)) + "px",
+            bg: p.d >= 0 ? "oklch(0.84 0.095 168 / .55)" : "oklch(0.62 0.055 165 / .75)",
+            align: p.d >= 0 ? "flex-end" : "flex-start"
+          }))
+        };
+      })(),
+      proxyEst: "$" + selCfg.est.toFixed(2),
+      proxyAct: "$" + selCfg.base.toFixed(2),
+      proxySelLow: selCfg.quality === "low",
+      proxyTfs: TFS.map(tf => {
+        const on = (this.state.proxyTf[sel] || "15분") === tf;
+        return {
+          label: tf,
+          bg: on ? "var(--tint)" : "transparent",
+          color: on ? "var(--ink)" : "var(--ink3)",
+          weight: on ? 600 : 400,
+          onPick: () => this.setState({ proxyTf: { ...this.state.proxyTf, [sel]: tf } })
+        };
+      }),
+      proxyTargets: [{ ticker: "MARKET", label: "지수 전체 (EWY)" }].concat(
+        list.filter(t => PROXY[t]).map(t => {
+          const m = UNIVERSE.find(u => u.ticker === t);
+          return { ticker: t, label: m ? m.name : t };
+        })
+      ).map(p => ({
+        label: p.label,
+        low: (PROXY[p.ticker] || {}).quality === "low",
+        bg: sel === p.ticker ? "var(--tint)" : "transparent",
+        border: sel === p.ticker ? "var(--brand-soft)" : "var(--rule)",
+        color: sel === p.ticker ? "var(--ink)" : "var(--ink2)",
+        weight: sel === p.ticker ? 600 : 400,
+        onPick: () => this.setState({ proxySel: p.ticker })
+      })),
+      proxyRows: list.filter(t => PROXY[t]).map(t => {
+        const m = UNIVERSE.find(u => u.ticker === t), cfg = PROXY[t];
+        const diff = cfg.est - cfg.base, pct = (diff / cfg.base) * 100;
+        return {
+          name: m ? m.name : t, ticker: t,
+          quality: cfg.quality === "low" ? "◈ 대표성 낮음" : "대표성 높음",
+          qColor: cfg.quality === "low" ? "var(--watch)" : "var(--ink3)",
+          dir: (diff >= 0 ? "▲ +" : "▼ ") + Math.abs(pct).toFixed(2) + "% 추정",
+          dirColor: diff >= 0 ? "var(--pos)" : "var(--neg)"
+        };
+      }),
+      showHitRate,
+      showPwa: !this.state.pwaDismissed && list.length > 0,
+      onDismissPwa: () => this.setState({ pwaDismissed: true }),
+      seedChips: [
+        { name: "삼성전자", onPick: () => this.add("005930") },
+        { name: "SK하이닉스", onPick: () => this.add("000660") },
+        { name: "카카오", onPick: () => this.add("035720") },
+        { name: "현대차", onPick: () => this.add("005380") }
+      ],
+      signalSummary: [
+        { label: "긍정 우위", icon: "◆", color: "var(--up)" },
+        { label: "주의", icon: "▽", color: "var(--down)" },
+        { label: "관망", icon: "◇", color: "var(--ink3)" }
+      ].map(s => ({
+        ...s,
+        n: counts[s.label] || 0,
+        bg: filter === s.label ? "var(--tint)" : "transparent",
+        weight: filter === s.label ? 600 : 400,
+        onPick: () => this.setState({ filter: filter === s.label ? null : s.label })
+      })),
+      indexOpen: this.state.indexOpen,
+      indexClosed: !this.state.indexOpen,
+      indexCaret: this.state.indexOpen ? "rotate(180deg)" : "rotate(0deg)",
+      indexToggleLabel: this.state.indexOpen ? "지수 띠 접기" : "지수 띠 펼치기",
+      onToggleIndex: () => this.setState({ indexOpen: !this.state.indexOpen }),
+      indices: [
+        { name: "코스피", value: "3,184.62", chg: 24.18, pct: 0.77 },
+        { name: "코스닥", value: "812.40", chg: -3.65, pct: -0.45 },
+        { name: "나스닥", value: "26,584.06", chg: 366.24, pct: 1.39 },
+        { name: "S&P 500", value: "7,747.71", chg: 81.11, pct: 1.05 },
+        { name: "필라델피아 반도체", value: "11,352.12", chg: 12.87, pct: 0.11 },
+        { name: "VIX", value: "14.32", chg: -0.88, pct: -5.78 }
+      ].map(x => ({
+        name: x.name,
+        value: x.value,
+        move: (x.chg > 0 ? "▲ +" : "▼ ") + Math.abs(x.chg).toFixed(2) + " (" + Math.abs(x.pct).toFixed(2) + "%)",
+        color: x.chg > 0 ? "var(--pos)" : "var(--neg)"
+      })),
+      filterOn: !!filter,
+      filterNote: filter ? filter + " 신호 " + blocks.length + "개만 보고 있습니다" : "",
+      onClearFilter: () => this.setState({ filter: null }),
+      miniList: list.map(t => {
+        const m = UNIVERSE.find(u => u.ticker === t), d = DATA[t];
+        if (!m || !d) return null;
+        const up = d.dir === "up";
+        return { name: m.name, move: (up ? "▲ +" : "▼ ") + d.changePct.toFixed(2) + "%", color: up ? "var(--pos)" : "var(--neg)" };
+      }).filter(Boolean),
+      schedule: [
+        { date: "09.08", text: "삼성전자 3분기 잠정실적 발표 예정" },
+        { date: "09.11", text: "SK하이닉스 기관투자자 설명회" },
+        { date: "09.15", text: "카카오 공정위 자료 제출 기한" }
+      ],
+      lastSync: this.state.loading ? "불러오는 중…" : "마지막 갱신 15:42 · 15분마다 자동",
+      onRefresh: this.refresh
+    };
+  }
+}
+</script>
+</body>
+</html>
