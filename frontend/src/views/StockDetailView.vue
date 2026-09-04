@@ -8,10 +8,12 @@ import SignalBadge from "@/components/briefing/SignalBadge.vue";
 import VerdictPanel from "@/components/briefing/VerdictPanel.vue";
 import SpectrumGauge from "@/components/briefing/SpectrumGauge.vue";
 import PriceChart from "@/components/briefing/PriceChart.vue";
+import TechnicalAnalysisPanel from "@/components/briefing/TechnicalAnalysisPanel.vue";
 import ConsensusPanel from "@/components/briefing/ConsensusPanel.vue";
 import NewsList from "@/components/briefing/NewsList.vue";
 import FilingsList from "@/components/briefing/FilingsList.vue";
 import FlowsTable from "@/components/briefing/FlowsTable.vue";
+import { analyzeSeries } from "@/lib/technicalAnalysis";
 
 const props = defineProps<{ ticker: string }>();
 const router = useRouter();
@@ -21,6 +23,7 @@ const tickerRef = toRef(props, "ticker");
 const { snapshot, loading } = useSingleBriefing(tickerRef);
 
 const verdict = computed(() => (snapshot.value ? VERDICTS[snapshot.value.verdict] : null));
+const technicalAnalysis = computed(() => (snapshot.value ? analyzeSeries(snapshot.value.series) : null));
 
 function backToFeed() {
   router.push("/");
@@ -66,6 +69,11 @@ function removeAndBack() {
 
       <section class="section">
         <PriceChart :series="snapshot.series" :height="220" />
+      </section>
+
+      <section v-if="technicalAnalysis" class="section">
+        <div class="section-label">차트 분석</div>
+        <TechnicalAnalysisPanel :analysis="technicalAnalysis" />
       </section>
 
       <section class="section">
