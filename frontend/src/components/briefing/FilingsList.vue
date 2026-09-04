@@ -6,7 +6,15 @@ defineProps<{ filings: FilingItem[]; showDartNote?: boolean }>();
 
 <template>
   <div class="filings">
-    <a v-for="(f, i) in filings" :key="i" href="#" class="filing-row" @click.prevent>
+    <a
+      v-for="(f, i) in filings"
+      :key="i"
+      :href="f.url || '#'"
+      target="_blank"
+      rel="noopener"
+      class="filing-row"
+      @click="!f.url && $event.preventDefault()"
+    >
       <span class="date">{{ f.date }}</span>
       <span class="body">
         <span class="title">{{ f.title }}</span>

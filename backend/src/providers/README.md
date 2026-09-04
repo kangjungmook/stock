@@ -1,24 +1,31 @@
-# 데이터 provider
+# 데이터 provider — 현재 상태
 
-이 폴더는 프론트엔드가 요구하는 데이터 모양(`../types.ts`)과 실제 데이터 소스를 분리하는 자리다.
+각 데이터 도메인은 독립적으로 mock ↔ 실 데이터를 전환한다 (`env.ts`의 `liveProvidersConfigured`).
+해당 키가 `.env`에 있으면 실 provider를 시도하고, 없거나 호출이 실패하면 조용히 mock으로
+폴백한다 — 그래서 하나가 안 되도 나머지 화면은 정상 동작한다.
 
-## 지금 상태 (mock)
+| 도메인 | 상태 | 소스 | 신뢰도 |
+| --- | --- | --- | --- |
+| 시세·차트 (§ 등락·차트) | **live** | 토스증권 Open API (`live/tossProvider.ts`, `tossinvest-openapi` SDK) | 높음 — SDK 소스를 직접 읽고 구현. 다만 이 세션에서 실제 응답으로 검증은 못 함 |
+| 공시 (§ 공시) | **live** | DART Open API (`live/dartProvider.ts`) | 높음 — 안정적인 공개 API, 오래전부터 알려진 스펙 |
+| 컨센서스 (§ 목표주가·투자의견) | **best-effort** | WiseReport 크롤링 (`live/consensusProvider.ts`) | 낮음 — 셀렉터 미검증, 실패 시 자동으로 mock 폴백 |
+| 수급 (§ 외국인·기관 순매수) | **미구현 (stub)** | KRX Open API (`live/krxFlowsProvider.ts`) | 엔드포인트 스펙을 확인 못해 항상 mock 폴백 — 실제 요청/응답 예시가 오면 완성 가능 |
+| 뉴스 | mock | — | AI 서비스 연동 대기 중 (어떤 서비스인지 확인 필요) |
+| 시장 지수 / 개장 전 추정가(EWY) | mock | — | 나중으로 미룸 (사용자 결정) |
 
-- `../data/mockBriefings.ts`, `../data/mockProxy.ts`, `../data/mockIndices.ts`, `../data/universe.ts`가
-  디자인 프로토타입(`design/Stock Briefing Dashboard.dc.html`)의 픽스처를 그대로 옮긴 목 데이터다.
-- `marketData.ts`가 이 목 데이터를 감싸서 라우트에 노출한다. `SUPABASE_URL` /
-  `SUPABASE_SERVICE_ROLE_KEY`가 설정돼 있으면 `briefing_snapshots` / `market_indices` /
-  `securities` 테이블을 먼저 읽고, 없으면 목 데이터로 채운 뒤 그 값을 테이블에 써 둔다(캐시 워밍).
-  즉 DB가 있든 없든 API 응답 모양은 동일하다.
+## 왜 이렇게 나눴는가
 
-## 실 데이터로 교체하는 법
+- `marketData.ts`가 mock 데이터를 기본 뼈대(헤드라인·판단근거·적중률처럼 신호 엔진이 필요한
+  값)로 깔고, 그 위에 실 provider 결과를 도메인별로 덮어쓴다. 신호 엔진 자체는 별도 프로젝트라
+  헤드라인/판단근거는 당분간 계속 mock이다 — 그래서 실제 가격은 실 데이터인데 브리핑 문장은
+  가상의 스토리인 상태가 당분간 이어진다.
+- 외부 API를 매 요청마다 부르면 rate limit에 걸리거나 느려지므로, `lib/cache.ts`의 짧은
+  in-memory TTL 캐시를 거친다 (시세 1분 · 공시 30분 · 컨센서스 1시간 · 수급 30분).
 
-뉴스·공시(DART)·컨센서스·시세(토스증권 등) API 키가 준비되면:
+## 다음 단계
 
-1. `env.ts`에서 해당 키를 읽어오게 하고 (`.env.example`에 이미 자리를 파 뒀다).
-2. 이 폴더에 `live/newsProvider.ts` 같은 파일을 만들어 실제 API를 호출하고 `../types.ts`의 타입에
-   맞춰 응답을 매핑한다.
-3. `marketData.ts`의 해당 함수 내부에서 mock 호출 대신 live provider를 호출하도록 바꾼다
-   (`env.dataProvider === "live"`일 때만 분기하면 mock/live를 환경변수로 즉시 전환할 수 있다).
-
-프론트엔드는 REST 응답 모양만 보므로, 이 폴더 밖은 건드릴 필요가 없다.
+- **컨센서스**: 배포 후 로그에 `[consensus] selectors did not match` 경고가 계속 뜨면, 실제로
+  받은 HTML 일부를 알려주면 셀렉터를 맞춘다.
+- **수급(KRX)**: `openapi.krx.co.kr`에서 "투자자별 거래실적" 신청 후 나오는 요청 예시(curl)나
+  응답 JSON 샘플을 알려주면 바로 붙인다.
+- **뉴스**: 어떤 AI 서비스 키인지 확인되면 `live/newsProvider.ts`를 추가한다.

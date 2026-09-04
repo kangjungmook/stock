@@ -20,6 +20,7 @@ export interface FilingItem {
   date: string;
   title: string;
   meta: string;
+  url?: string;
 }
 
 export interface ConsensusInfo {

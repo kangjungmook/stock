@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import { env } from "./env.js";
+import { env, liveProvidersConfigured } from "./env.js";
 import { securitiesRouter } from "./routes/securities.js";
 import { briefingsRouter } from "./routes/briefings.js";
 import { indicesRouter } from "./routes/indices.js";
@@ -19,5 +19,8 @@ app.use("/api/indices", indicesRouter);
 app.use("/api/proxy", proxyRouter);
 
 app.listen(env.port, () => {
-  console.log(`[server] listening on :${env.port} (data provider: ${env.dataProvider})`);
+  const live = Object.entries(liveProvidersConfigured)
+    .filter(([, on]) => on)
+    .map(([name]) => name);
+  console.log(`[server] listening on :${env.port} (live providers: ${live.length ? live.join(", ") : "none, mock"})`);
 });
