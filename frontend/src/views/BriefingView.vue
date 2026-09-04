@@ -2,6 +2,7 @@
 import { computed, ref } from "vue";
 import { useWatchlist } from "@/composables/useWatchlist";
 import { useBriefing } from "@/composables/useBriefing";
+import { usePolling } from "@/composables/usePolling";
 import type { Verdict } from "@/api/types";
 import SignalSummaryStrip from "@/components/briefing/SignalSummaryStrip.vue";
 import DailyBrief from "@/components/briefing/DailyBrief.vue";
@@ -12,8 +13,12 @@ import SideRail from "@/components/briefing/SideRail.vue";
 import PwaPrompt from "@/components/briefing/PwaPrompt.vue";
 
 const { list, add } = useWatchlist();
-const { blocks, loading, refresh } = useBriefing(list);
+const { blocks, loading, lastUpdated, refresh, refreshSilently } = useBriefing(list);
 const filter = ref<Verdict | null>(null);
+
+// 사이드 레일에 "15분마다 자동"이라고 써 있는 만큼 실제로 그렇게 동작해야 한다.
+// 화면을 깜빡이게 하지 않도록 조용히(silent) 갱신한다.
+usePolling(refreshSilently, 15 * 60 * 1000).start();
 
 const isEmpty = computed(() => list.value.length === 0);
 
@@ -88,6 +93,7 @@ const seedChips = [
       :blocks="blocks"
       :counts="counts"
       :loading="loading"
+      :last-updated="lastUpdated"
       @refresh="refresh"
       @open-support="$router.push('/support')"
     />

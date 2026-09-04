@@ -8,6 +8,7 @@ const props = defineProps<{
   counts: Partial<Record<Verdict, number>>;
   modelValue: Verdict | null;
   loading: boolean;
+  lastUpdated: Date | null;
 }>();
 const emit = defineEmits<{
   (e: "update:modelValue", value: Verdict | null): void;
@@ -26,7 +27,13 @@ const schedule = computed(() =>
     .slice(0, 4)
 );
 
-const lastSyncLabel = computed(() => (props.loading ? "불러오는 중…" : "마지막 갱신 방금 전 · 15분마다 자동"));
+const lastSyncLabel = computed(() => {
+  if (props.loading) return "불러오는 중…";
+  if (!props.lastUpdated) return "아직 갱신 전 · 15분마다 자동";
+  const hh = String(props.lastUpdated.getHours()).padStart(2, "0");
+  const mm = String(props.lastUpdated.getMinutes()).padStart(2, "0");
+  return `마지막 갱신 ${hh}:${mm} · 15분마다 자동`;
+});
 </script>
 
 <template>
