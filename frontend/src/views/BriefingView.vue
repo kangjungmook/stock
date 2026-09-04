@@ -11,6 +11,9 @@ import LoadingSkeleton from "@/components/briefing/LoadingSkeleton.vue";
 import BriefingBlock from "@/components/briefing/BriefingBlock.vue";
 import SideRail from "@/components/briefing/SideRail.vue";
 import PwaPrompt from "@/components/briefing/PwaPrompt.vue";
+import AdSlot from "@/components/briefing/AdSlot.vue";
+
+const adSlotFeed = import.meta.env.VITE_ADSENSE_SLOT_FEED;
 
 const { list, add } = useWatchlist();
 const { blocks, loading, lastUpdated, refresh, refreshSilently } = useBriefing(list);
@@ -78,6 +81,8 @@ const seedChips = [
         </EmptyState>
 
         <BriefingBlock v-for="b in filteredBlocks" :key="b.ticker" :snapshot="b" />
+
+        <AdSlot placement="feed" :slot-id="adSlotFeed" />
 
         <PwaPrompt v-if="!isEmpty" />
 

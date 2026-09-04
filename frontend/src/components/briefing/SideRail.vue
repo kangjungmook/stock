@@ -2,6 +2,9 @@
 import { computed } from "vue";
 import type { BriefingSnapshot, Verdict } from "@/api/types";
 import { SIGNAL_FILTERS, moveColor, moveLabel } from "@/lib/signals";
+import AdSlot from "./AdSlot.vue";
+
+const adSlotRail = import.meta.env.VITE_ADSENSE_SLOT_RAIL;
 
 const props = defineProps<{
   blocks: BriefingSnapshot[];
@@ -71,6 +74,8 @@ const lastSyncLabel = computed(() => {
       <button class="refresh-btn" @click="emit('refresh')">지금 다시 불러오기</button>
       <button class="support-link" @click="emit('open-support')">커피 한 잔 보내기</button>
     </div>
+
+    <AdSlot placement="rail" :slot-id="adSlotRail" />
   </aside>
 </template>
 
