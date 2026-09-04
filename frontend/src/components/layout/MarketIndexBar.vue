@@ -28,12 +28,15 @@ function move(ix: IndexQuote) {
   <div class="index-bar-wrap">
     <div class="index-bar">
       <span class="label">시장 지수</span>
-      <div v-if="open" class="scroller">
-        <span v-for="ix in indices" :key="ix.name" class="ix">
-          <span class="ix-name">{{ ix.name }}</span>
-          <span class="ix-value tabular">{{ ix.value }}</span>
-          <span class="ix-move tabular" :style="{ color: moveColor(ix.pct) }">{{ move(ix) }}</span>
-        </span>
+      <div v-if="open" class="scroller-wrap">
+        <div class="scroller">
+          <span v-for="ix in indices" :key="ix.name" class="ix">
+            <span class="ix-name">{{ ix.name }}</span>
+            <span class="ix-value tabular">{{ ix.value }}</span>
+            <span class="ix-move tabular" :style="{ color: moveColor(ix.pct) }">{{ move(ix) }}</span>
+          </span>
+        </div>
+        <div class="scroll-fade" aria-hidden="true"></div>
       </div>
       <span v-else class="closed-summary">
         {{ indices[0]?.name }} {{ indices[0]?.value }} · {{ indices[2]?.name }} {{ indices[2]?.value }}
@@ -69,9 +72,12 @@ function move(ix: IndexQuote) {
   flex: none;
   white-space: nowrap;
 }
-.scroller {
+.scroller-wrap {
+  position: relative;
   flex: 1;
   min-width: 0;
+}
+.scroller {
   display: flex;
   align-items: center;
   gap: 20px;
@@ -81,6 +87,17 @@ function move(ix: IndexQuote) {
 }
 .scroller::-webkit-scrollbar {
   display: none;
+}
+/* 스크롤로 더 볼 지수가 남아 있다는 걸 알려주는 가장자리 페이드 — 화살표나 스크롤바 없이도
+   "잘린 게 아니라 더 있다"는 신호를 준다. 클릭을 가로채면 안 되니 pointer-events는 끈다. */
+.scroll-fade {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 28px;
+  background: linear-gradient(to right, transparent, var(--sunken));
+  pointer-events: none;
 }
 .ix {
   display: inline-flex;

@@ -67,7 +67,10 @@ export function createProxyChart(
     timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false },
     crosshair: { mode: 0 },
     handleScale: { axisPressedMouseMove: false },
-    localization: { priceFormatter: (p: number) => "$" + p.toFixed(2) }
+    // locale을 명시하지 않으면 브라우저가 보고하는 값을 그대로 Intl.DateTimeFormat에 넘기는데,
+    // 일부 환경(구형 WebView, 로케일 설정이 깨진 OS 등)에서는 BCP-47 규격이 아닌 값을 반환해
+    // "Invalid language tag" 에러로 차트 전체가 렌더링되지 않는다. 한국 주식 앱이니 ko-KR로 고정한다.
+    localization: { locale: "ko-KR", priceFormatter: (p: number) => "$" + p.toFixed(2) }
   });
 
   const estSeries: ISeriesApi<"Line"> = chart.addLineSeries({

@@ -8,7 +8,7 @@ const props = defineProps<{ flows: FlowItem[]; updated?: string }>();
 const foreignSum = computed(() => props.flows.reduce((a, f) => a + f.foreign, 0));
 const instSum = computed(() => props.flows.reduce((a, f) => a + f.inst, 0));
 function sumLabel(v: number) {
-  return (v > 0 ? "+" : "") + v.toLocaleString() + "억";
+  return (v > 0 ? "+" : "") + v.toLocaleString("ko-KR") + "억";
 }
 </script>
 

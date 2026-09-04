@@ -42,7 +42,9 @@ export function moveColor(changePct: number): string {
 }
 
 export function flowLabel(value: number): string {
-  return (value > 0 ? "▲ +" : "▼ ") + Math.abs(value).toLocaleString();
+  // 로케일을 명시하지 않으면 브라우저가 보고하는 값을 그대로 쓰는데, 드물게 깨진 로케일
+  // 문자열을 보고하는 환경에서는 이게 에러를 던진다 — 한국 앱이니 ko-KR로 고정한다.
+  return (value > 0 ? "▲ +" : "▼ ") + Math.abs(value).toLocaleString("ko-KR");
 }
 
 export function flowColor(value: number): string {

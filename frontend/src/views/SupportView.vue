@@ -19,10 +19,10 @@ function onCustomInput(e: Event) {
 
 const sendLabel = computed(() => {
   if (selected.value === "free") {
-    return customAmount.value ? Number(customAmount.value).toLocaleString() + "원 보내기" : "금액을 입력해 주세요";
+    return customAmount.value ? Number(customAmount.value).toLocaleString("ko-KR") + "원 보내기" : "금액을 입력해 주세요";
   }
   const preset = PRESETS.find((p) => p.key === selected.value);
-  return (preset && "amount" in preset ? preset.amount.toLocaleString() : "0") + "원 보내기";
+  return (preset && "amount" in preset ? preset.amount.toLocaleString("ko-KR") : "0") + "원 보내기";
 });
 
 // 실제 송금 링크는 준비되는 대로 환경변수로 주입 (토스/카카오페이 송금 링크).
@@ -45,7 +45,7 @@ const kakaoLink = import.meta.env.VITE_KAKAOPAY_SUPPORT_URL || "#";
         @click="selected = p.key"
       >
         <span class="preset-label">{{ p.label }}</span>
-        <span class="preset-amount tabular">{{ "amount" in p ? p.amount.toLocaleString() + "원" : "직접 입력" }}</span>
+        <span class="preset-amount tabular">{{ "amount" in p ? p.amount.toLocaleString("ko-KR") + "원" : "직접 입력" }}</span>
         <span class="preset-note">{{ p.note }}</span>
       </button>
     </div>
