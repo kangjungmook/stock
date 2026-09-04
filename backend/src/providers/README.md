@@ -10,7 +10,7 @@
 | 공시 (§ 공시) | **live** | DART Open API (`live/dartProvider.ts`) | 높음 — 안정적인 공개 API, 오래전부터 알려진 스펙 |
 | 컨센서스 (§ 목표주가·투자의견) | **best-effort** | WiseReport 크롤링 (`live/consensusProvider.ts`) | 낮음 — 셀렉터 미검증, 실패 시 자동으로 mock 폴백 |
 | 수급 (§ 외국인·기관 순매수) | **미구현 (stub)** | KRX Open API (`live/krxFlowsProvider.ts`) | 엔드포인트 스펙을 확인 못해 항상 mock 폴백 — 실제 요청/응답 예시가 오면 완성 가능 |
-| 뉴스 | mock | — | AI 서비스 연동 대기 중 (어떤 서비스인지 확인 필요) |
+| 뉴스 | **live** | Gemini API + Google Search grounding (`live/newsProvider.ts`) | 중간 — grounding으로 실제 검색된 사건만 다루도록 강제했지만, 이 세션에서 실제 응답으로 검증은 못 함. 순수 생성(grounding 없이)은 의도적으로 안 씀 — 실제 언론사 이름을 출처로 붙인 가짜 기사 위험 때문 |
 | 시장 지수 / 개장 전 추정가(EWY) | mock | — | 나중으로 미룸 (사용자 결정) |
 
 ## 왜 이렇게 나눴는가
@@ -28,4 +28,5 @@
   받은 HTML 일부를 알려주면 셀렉터를 맞춘다.
 - **수급(KRX)**: `openapi.krx.co.kr`에서 "투자자별 거래실적" 신청 후 나오는 요청 예시(curl)나
   응답 JSON 샘플을 알려주면 바로 붙인다.
-- **뉴스**: 어떤 AI 서비스 키인지 확인되면 `live/newsProvider.ts`를 추가한다.
+- **뉴스**: 배포 후 실제 그라운딩 응답 형식이 다르면(예: `google_search` 대신 다른 tool 이름을
+  요구하거나 Interactions API로 완전히 넘어갔다는 에러가 나면) 에러 메시지를 알려주면 맞춘다.

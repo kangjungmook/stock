@@ -7,7 +7,15 @@ defineProps<{ news: NewsItem[] }>();
 
 <template>
   <div class="news-list">
-    <a v-for="(n, i) in news" :key="i" href="#" class="news-row" @click.prevent>
+    <a
+      v-for="(n, i) in news"
+      :key="i"
+      :href="n.url || '#'"
+      target="_blank"
+      rel="noopener"
+      class="news-row"
+      @click="!n.url && $event.preventDefault()"
+    >
       <span class="time">{{ n.time }}</span>
       <span class="body">
         <span class="title">{{ n.title }}</span>

@@ -9,6 +9,7 @@ import { fetchDartFilings } from "./live/dartProvider.js";
 import { fetchTossQuote } from "./live/tossProvider.js";
 import { fetchConsensus } from "./live/consensusProvider.js";
 import { fetchKrxFlows } from "./live/krxFlowsProvider.js";
+import { fetchGroundedNews } from "./live/newsProvider.js";
 import type { BriefingSnapshot, IndexQuote, ProxyCoverageRow, ProxySeriesResponse, Security, Timeframe } from "../types.js";
 
 /**
@@ -24,7 +25,8 @@ const TTL = {
   quote: 60_000, // 1분
   filings: 30 * 60_000, // 30분
   consensus: 60 * 60_000, // 1시간
-  flows: 30 * 60_000 // 30분
+  flows: 30 * 60_000, // 30분
+  news: 20 * 60_000 // 20분 — Google Search grounding은 검색 1회당 과금되므로 넉넉하게
 };
 
 export function listSecurities(): Security[] {
@@ -99,6 +101,15 @@ async function enrichWithLiveData(ticker: string, base: BriefingSnapshot): Promi
       if (flows.length) snapshot.flows = flows;
     } catch (error) {
       console.warn(`[krx] ${ticker} 수급 조회 실패, mock 값 유지:`, (error as Error).message);
+    }
+  }
+
+  if (liveProvidersConfigured.newsAi) {
+    try {
+      const news = await withCache(`news:${ticker}`, TTL.news, () => fetchGroundedNews(snapshot.name, ticker));
+      if (news.length) snapshot.news = news;
+    } catch (error) {
+      console.warn(`[news] ${ticker} 뉴스 조회 실패, mock 값 유지:`, (error as Error).message);
     }
   }
 

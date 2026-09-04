@@ -14,6 +14,7 @@ export interface NewsItem {
   source: string;
   tag: string;
   tone: Tone;
+  url?: string;
 }
 
 export interface FilingItem {
