@@ -31,3 +31,29 @@ export async function withCache<T>(key: string, ttlMs: number, fn: () => Promise
     throw error;
   }
 }
+
+const inFlight = new Set<string>();
+
+/**
+ * LLM 호출처럼 몇 초씩 걸릴 수 있는 건 /api/briefings 응답을 절대 기다리게 하면 안 된다 —
+ * 캐시에 값이 있으면(만료됐어도) 즉시 그걸 반환하고, 없거나 만료됐으면 백그라운드로
+ * 새로 받아와 캐시만 채워 두고 지금 요청은 null을 즉시 반환한다(그러면 호출부가 mock으로
+ * 폴백한다). 다음 요청(수동 새로고침·15분 자동 갱신)부터는 캐시가 채워져 있어 바로 뜬다.
+ */
+export function staleWhileRevalidate<T>(key: string, ttlMs: number, fn: () => Promise<T>): T | null {
+  const hit = store.get(key);
+  const isFresh = !!hit && hit.expiresAt > Date.now();
+
+  if (!isFresh && !inFlight.has(key)) {
+    inFlight.add(key);
+    fn()
+      .then((value) => store.set(key, { outcome: { ok: true, value }, expiresAt: Date.now() + ttlMs }))
+      .catch((error) => {
+        store.set(key, { outcome: { ok: false, error }, expiresAt: Date.now() + ttlMs });
+        console.warn(`[cache] 백그라운드 갱신 실패(${key}):`, error?.message ?? error);
+      })
+      .finally(() => inFlight.delete(key));
+  }
+
+  return hit?.outcome.ok ? (hit.outcome.value as T) : null;
+}

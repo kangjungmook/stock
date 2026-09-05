@@ -1,6 +1,6 @@
 import { supabase } from "../supabaseClient.js";
 import { liveProvidersConfigured } from "../env.js";
-import { withCache } from "../lib/cache.js";
+import { withCache, staleWhileRevalidate } from "../lib/cache.js";
 import { UNIVERSE, searchUniverse } from "../data/universe.js";
 import { getMockBriefing } from "../data/mockBriefings.js";
 import { getMockIndices } from "../data/mockIndices.js";
@@ -60,10 +60,15 @@ function parseWon(value: string): number {
 
 /**
  * 시세(토스)를 먼저 기다린 다음(컨센서스의 "여력 %" 계산에 실제 현재가가 필요하므로),
- * 나머지 다섯 개(공시·컨센서스·수급·뉴스·AI 신호 스펙트럼)는 서로 의존하지 않으므로
- * 동시에 실행한다. 예전에는 이걸 하나씩 순서대로 기다렸는데, 그러면 총 대기 시간이
- * 각 타임아웃의 합(30초+)까지 늘어나서 /api/briefings 요청 전체가 멈춘 것처럼 보였다 —
- * 병렬로 돌리면 가장 느린 하나만큼만 기다리면 된다.
+ * 공시·컨센서스·수급은 서로 의존하지 않으므로 동시에 실행한다. 예전에는 이걸 하나씩
+ * 순서대로 기다렸는데, 그러면 총 대기 시간이 각 타임아웃의 합(30초+)까지 늘어나서
+ * /api/briefings 요청 전체가 멈춘 것처럼 보였다 — 병렬로 돌리면 가장 느린 하나만큼만
+ * 기다리면 된다.
+ *
+ * 뉴스·AI 신호 스펙트럼은 Gemini 호출이라 몇 초씩 걸릴 수 있어서, 이 요청 안에서는
+ * 아예 기다리지 않는다(staleWhileRevalidate) — 캐시에 값이 있으면 그걸 즉시 쓰고,
+ * 없으면 mock으로 폴백하면서 백그라운드로 새로 받아와 캐시만 채워 둔다. 다음 요청
+ * (수동 새로고침·15분 자동 갱신)부터 바로 반영된다.
  */
 async function enrichWithLiveData(ticker: string, base: BriefingSnapshot): Promise<BriefingSnapshot> {
   const snapshot: BriefingSnapshot = { ...base };
@@ -86,21 +91,12 @@ async function enrichWithLiveData(ticker: string, base: BriefingSnapshot): Promi
 
   const currentPrice = parseWon(snapshot.price);
 
-  const [dartResult, consensusResult, krxResult, newsResult, aiVerdictResult] = await Promise.allSettled([
+  const [dartResult, consensusResult, krxResult] = await Promise.allSettled([
     liveProvidersConfigured.dart
       ? withCache(`dart:${ticker}`, TTL.filings, () => fetchDartFilings(ticker))
       : Promise.resolve(null),
     withCache(`consensus:${ticker}`, TTL.consensus, () => fetchConsensus(ticker, currentPrice)),
-    liveProvidersConfigured.krx ? withCache(`krx:${ticker}`, TTL.flows, () => fetchKrxFlows(ticker)) : Promise.resolve(null),
-    liveProvidersConfigured.newsAi
-      ? withCache(`news:${ticker}`, TTL.news, () => fetchGroundedNews(snapshot.name, ticker))
-      : Promise.resolve(null),
-    // 이미 모아둔 근거(factors)·컨센서스·뉴스·수급을 그대로 넘겨 점수화만 시키는 것이라
-    // 여기서는 이번 요청에서 새로 받은 라이브 값이 아니라 base(mock/DB) 스냅샷 기준으로 판단한다 —
-    // 병렬로 돌리는 다른 호출들의 결과를 기다리지 않아도 되게 하기 위한 절충이다.
-    liveProvidersConfigured.newsAi
-      ? withCache(`ai-verdict:${ticker}`, TTL.aiVerdict, () => fetchAiVerdict(snapshot))
-      : Promise.resolve(null)
+    liveProvidersConfigured.krx ? withCache(`krx:${ticker}`, TTL.flows, () => fetchKrxFlows(ticker)) : Promise.resolve(null)
   ]);
 
   if (dartResult.status === "fulfilled") {
@@ -124,20 +120,20 @@ async function enrichWithLiveData(ticker: string, base: BriefingSnapshot): Promi
     console.warn(`[krx] ${ticker} 수급 조회 실패, mock 값 유지:`, krxResult.reason?.message ?? krxResult.reason);
   }
 
-  if (newsResult.status === "fulfilled") {
-    if (newsResult.value?.length) snapshot.news = newsResult.value;
-  } else {
-    console.warn(`[news] ${ticker} 뉴스 조회 실패, mock 값 유지:`, newsResult.reason?.message ?? newsResult.reason);
-  }
+  if (liveProvidersConfigured.newsAi) {
+    const news = staleWhileRevalidate(`news:${ticker}`, TTL.news, () => fetchGroundedNews(snapshot.name, ticker));
+    if (news?.length) snapshot.news = news;
 
-  if (aiVerdictResult.status === "fulfilled") {
-    if (aiVerdictResult.value) {
-      snapshot.aiVerdict = { ...aiVerdictResult.value, updatedAt: new Date().toISOString() };
-    }
-  } else {
-    // 실패하면 그냥 필드를 안 채운다 — 근거 없는 점수를 지어내 보여주는 것보다 위젯을
-    // 아예 숨기는 쪽(프론트에서 aiVerdict 없으면 렌더링 안 함)이 안전하다.
-    console.warn(`[ai-verdict] ${ticker} 조회 실패:`, aiVerdictResult.reason?.message ?? aiVerdictResult.reason);
+    // 이미 모아둔 근거(factors)·컨센서스·뉴스·수급을 그대로 넘겨 점수화만 시키는 것이라
+    // base(mock/DB) 스냅샷 기준으로 판단한다 — 어차피 이번 요청 안에서 결과를 안 기다리므로
+    // 최신 라이브 값을 넘길 필요가 없다. updatedAt은 실제로 받아온 시점 기준으로 캐시에
+    // 같이 저장해야 한다 — 읽을 때마다 지금 시각으로 새로 찍으면 오래된 캐시값인데도
+    // "방금 갱신됨"처럼 보이게 된다.
+    const aiVerdict = staleWhileRevalidate(`ai-verdict:${ticker}`, TTL.aiVerdict, async () => {
+      const result = await fetchAiVerdict(snapshot);
+      return result ? { ...result, updatedAt: new Date().toISOString() } : null;
+    });
+    if (aiVerdict) snapshot.aiVerdict = aiVerdict;
   }
 
   return snapshot;
