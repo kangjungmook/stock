@@ -49,7 +49,7 @@ const selQuality = computed(() => data.value?.cfg.quality ?? "high");
     <div class="eyebrow">
       <span class="tag">EWY PROXY</span>
       <span class="ref-badge">참고용 추정가</span>
-      <span class="updated tabular">방금 갱신 · 약 1분 주기</span>
+      <span class="updated tabular">모의 데이터 · 실시간 연동 전</span>
     </div>
     <h1 class="title">개장하면 대략 이 정도입니다</h1>
     <p class="lede">
@@ -77,7 +77,7 @@ const selQuality = computed(() => data.value?.cfg.quality ?? "high");
     <div v-if="divergence" class="divergence-section">
       <div>
         <div class="dg-head">
-          <span class="dg-label">실시간 괴리도</span>
+          <span class="dg-label">괴리도 (모의 데이터)</span>
           <span class="dg-state">
             <span class="icon">{{ divergence.stateIcon }}</span>{{ divergence.state }}
           </span>
