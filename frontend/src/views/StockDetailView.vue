@@ -8,6 +8,7 @@ import SignalBadge from "@/components/briefing/SignalBadge.vue";
 import VerdictPanel from "@/components/briefing/VerdictPanel.vue";
 import SpectrumGauge from "@/components/briefing/SpectrumGauge.vue";
 import PriceChart from "@/components/briefing/PriceChart.vue";
+import TradingViewWidget from "@/components/briefing/TradingViewWidget.vue";
 import TechnicalAnalysisPanel from "@/components/briefing/TechnicalAnalysisPanel.vue";
 import ConsensusPanel from "@/components/briefing/ConsensusPanel.vue";
 import NewsList from "@/components/briefing/NewsList.vue";
@@ -56,6 +57,11 @@ function removeAndBack() {
         </div>
         <p class="headline">{{ snapshot.headline }}</p>
       </header>
+
+      <section class="section">
+        <div class="section-label">실시간 시세</div>
+        <TradingViewWidget :ticker="snapshot.ticker" />
+      </section>
 
       <section class="section">
         <div class="section-label">판단 근거와 신뢰도</div>
