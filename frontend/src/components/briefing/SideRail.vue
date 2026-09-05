@@ -81,8 +81,9 @@ const lastSyncLabel = computed(() => {
 
 <style scoped>
 .rail {
+  /* 헤더가 nav+검색 한 줄만 sticky로 남으면서 훨씬 짧아졌다 — 그 아래 여백만큼만 띄운다. */
   position: sticky;
-  top: 132px;
+  top: 88px;
   padding-top: 40px;
 }
 .label {

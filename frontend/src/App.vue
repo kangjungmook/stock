@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import { useRoute } from "vue-router";
 import TheHeader from "@/components/layout/TheHeader.vue";
+import TheSubHeader from "@/components/layout/TheSubHeader.vue";
 import MobileTabBar from "@/components/layout/MobileTabBar.vue";
 import { useTheme } from "@/composables/useTheme";
 
@@ -13,6 +14,7 @@ const isDetail = computed(() => route.name === "stock-detail");
 <template>
   <div class="app-shell">
     <TheHeader :class="{ 'hide-mobile': isDetail }" />
+    <TheSubHeader :class="{ 'hide-mobile': isDetail }" />
     <main class="app-main">
       <router-view />
     </main>
