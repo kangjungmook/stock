@@ -1,6 +1,6 @@
 import { supabase } from "../supabaseClient.js";
 import { liveProvidersConfigured } from "../env.js";
-import { withCache, staleWhileRevalidate } from "../lib/cache.js";
+import { staleWhileRevalidate } from "../lib/cache.js";
 import { UNIVERSE, searchUniverse } from "../data/universe.js";
 import { getMockBriefing } from "../data/mockBriefings.js";
 import { getMockIndices } from "../data/mockIndices.js";
@@ -59,65 +59,46 @@ function parseWon(value: string): number {
 }
 
 /**
- * 시세(토스)를 먼저 기다린 다음(컨센서스의 "여력 %" 계산에 실제 현재가가 필요하므로),
- * 공시·컨센서스·수급은 서로 의존하지 않으므로 동시에 실행한다. 예전에는 이걸 하나씩
- * 순서대로 기다렸는데, 그러면 총 대기 시간이 각 타임아웃의 합(30초+)까지 늘어나서
- * /api/briefings 요청 전체가 멈춘 것처럼 보였다 — 병렬로 돌리면 가장 느린 하나만큼만
- * 기다리면 된다.
- *
- * 뉴스·AI 신호 스펙트럼은 Gemini 호출이라 몇 초씩 걸릴 수 있어서, 이 요청 안에서는
- * 아예 기다리지 않는다(staleWhileRevalidate) — 캐시에 값이 있으면 그걸 즉시 쓰고,
- * 없으면 mock으로 폴백하면서 백그라운드로 새로 받아와 캐시만 채워 둔다. 다음 요청
- * (수동 새로고침·15분 자동 갱신)부터 바로 반영된다.
+ * /api/briefings는 절대 외부 API를 기다리면 안 된다 — 토스·DART·컨센서스 크롤링·KRX·
+ * Gemini 중 단 하나만 느려지거나(외부 서버 상태는 우리가 통제 불가) 막혀도 응답 전체가
+ * 그만큼 느려지는 게 예전 구조의 근본 문제였다. 그래서 여섯 개 전부 staleWhileRevalidate로
+ * 처리한다 — 캐시에 값이 있으면(오래됐어도) 즉시 그걸 쓰고, 없거나 만료됐으면 mock/이전
+ * 값으로 즉시 폴백하면서 백그라운드로 새로 받아와 캐시만 채운다. 그 결과 이 함수는
+ * 외부 네트워크를 단 한 번도 기다리지 않고 항상 즉시 반환한다. 다음 요청(수동 새로고침·
+ * 15분 자동 갱신)부터 캐시가 채워진 값이 바로 보인다.
  */
 async function enrichWithLiveData(ticker: string, base: BriefingSnapshot): Promise<BriefingSnapshot> {
   const snapshot: BriefingSnapshot = { ...base };
 
   if (liveProvidersConfigured.toss) {
-    try {
-      const quote = await withCache(`toss:${ticker}`, TTL.quote, () => fetchTossQuote(ticker));
-      if (quote) {
-        snapshot.price = quote.price;
-        snapshot.changePct = quote.changePct;
-        snapshot.dir = quote.dir;
-        snapshot.series = quote.series;
-        snapshot.quoteError = false;
-      }
-    } catch (error) {
-      console.warn(`[toss] ${ticker} 시세 조회 실패, mock 값 유지:`, (error as Error).message);
-      snapshot.quoteError = true;
+    const quote = staleWhileRevalidate(`toss:${ticker}`, TTL.quote, () => fetchTossQuote(ticker));
+    if (quote) {
+      snapshot.price = quote.price;
+      snapshot.changePct = quote.changePct;
+      snapshot.dir = quote.dir;
+      snapshot.series = quote.series;
+      snapshot.quoteError = false;
     }
   }
 
   const currentPrice = parseWon(snapshot.price);
 
-  const [dartResult, consensusResult, krxResult] = await Promise.allSettled([
-    liveProvidersConfigured.dart
-      ? withCache(`dart:${ticker}`, TTL.filings, () => fetchDartFilings(ticker))
-      : Promise.resolve(null),
-    withCache(`consensus:${ticker}`, TTL.consensus, () => fetchConsensus(ticker, currentPrice)),
-    liveProvidersConfigured.krx ? withCache(`krx:${ticker}`, TTL.flows, () => fetchKrxFlows(ticker)) : Promise.resolve(null)
-  ]);
-
-  if (dartResult.status === "fulfilled") {
-    if (dartResult.value?.length) snapshot.filings = dartResult.value;
-  } else {
-    console.warn(`[dart] ${ticker} 공시 조회 실패, mock 값 유지:`, dartResult.reason?.message ?? dartResult.reason);
+  if (liveProvidersConfigured.dart) {
+    const filings = staleWhileRevalidate(`dart:${ticker}`, TTL.filings, () => fetchDartFilings(ticker));
+    if (filings?.length) snapshot.filings = filings;
   }
 
-  if (consensusResult.status === "fulfilled") {
-    if (consensusResult.value) {
-      snapshot.consensus = consensusResult.value.consensus;
-      if (consensusResult.value.opinions.length) snapshot.opinions = consensusResult.value.opinions;
-    }
-  } else {
-    console.warn(`[consensus] ${ticker} 조회 실패, mock 값 유지:`, consensusResult.reason?.message ?? consensusResult.reason);
+  // currentPrice는 이번 요청에서 새로 받은 라이브 시세가 아니라 캐시된(혹은 mock) 값
+  // 기준일 수 있다 — 컨센서스도 어차피 기다리지 않으므로 완벽히 동기화할 필요는 없다.
+  const consensus = staleWhileRevalidate(`consensus:${ticker}`, TTL.consensus, () => fetchConsensus(ticker, currentPrice));
+  if (consensus) {
+    snapshot.consensus = consensus.consensus;
+    if (consensus.opinions.length) snapshot.opinions = consensus.opinions;
   }
 
-  if (krxResult.status === "fulfilled") {
-    if (krxResult.value?.length) snapshot.flows = krxResult.value;
-  } else {
-    console.warn(`[krx] ${ticker} 수급 조회 실패, mock 값 유지:`, krxResult.reason?.message ?? krxResult.reason);
+  if (liveProvidersConfigured.krx) {
+    const flows = staleWhileRevalidate(`krx:${ticker}`, TTL.flows, () => fetchKrxFlows(ticker));
+    if (flows?.length) snapshot.flows = flows;
   }
 
   if (liveProvidersConfigured.newsAi) {
@@ -125,9 +106,8 @@ async function enrichWithLiveData(ticker: string, base: BriefingSnapshot): Promi
     if (news?.length) snapshot.news = news;
 
     // 이미 모아둔 근거(factors)·컨센서스·뉴스·수급을 그대로 넘겨 점수화만 시키는 것이라
-    // base(mock/DB) 스냅샷 기준으로 판단한다 — 어차피 이번 요청 안에서 결과를 안 기다리므로
-    // 최신 라이브 값을 넘길 필요가 없다. updatedAt은 실제로 받아온 시점 기준으로 캐시에
-    // 같이 저장해야 한다 — 읽을 때마다 지금 시각으로 새로 찍으면 오래된 캐시값인데도
+    // base(mock/DB) 스냅샷 기준으로 판단한다. updatedAt은 실제로 받아온 시점 기준으로
+    // 캐시에 같이 저장해야 한다 — 읽을 때마다 지금 시각으로 새로 찍으면 오래된 캐시값인데도
     // "방금 갱신됨"처럼 보이게 된다.
     const aiVerdict = staleWhileRevalidate(`ai-verdict:${ticker}`, TTL.aiVerdict, async () => {
       const result = await fetchAiVerdict(snapshot);
